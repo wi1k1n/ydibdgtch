@@ -59,3 +59,12 @@ The following components need to be connected:
 ### Semantics System
 
 Wemos D1 mini pro board has the following connections:
+
+
+# Types of board lighting:
+
+- Showing currently sensed pieces
+- Showing if illegal move was made
+- Showing if in check
+- Showing if checkmated
+- Showing available places for the piece
