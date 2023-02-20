@@ -35,6 +35,9 @@ void LEDMatrix::showLEDs(CellCRGB (*check)(uint8_t idx)) {
 #endif
 		CellCRGB cell = check(i);
         uint8_t cellLedIdx = row * 8 + col; // index of current cell in led coordinate system
+#ifdef _DEBUG_
+		cellLedIdx = row * dbgLedsCols + col;
+#endif
 		for (uint8_t j = 0; j < CellCRGB::ledCount; ++j) {
 			// uint8_t ledLocalIdx = isRowOdd ? (CellCRGB::ledCount - 1 - j) : j; // if leds order in each cell was reverted
 			uint8_t ledLocalIdx = j;
@@ -42,7 +45,4 @@ void LEDMatrix::showLEDs(CellCRGB (*check)(uint8_t idx)) {
 		}
 	}
 	FastLED.show();
-}
-void LEDMatrix::showLEDs(CRGB (*check)(uint8_t idx)) {
-	showLEDs(check);
 }
