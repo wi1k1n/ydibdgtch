@@ -3,6 +3,8 @@
 
 #include "Arduino.h"
 
+#define _DEBUG_ 1
+
 #define PIN_REED_SWITCH 2
 #define PIN_LEDS 13
 
