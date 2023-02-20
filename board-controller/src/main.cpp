@@ -6,13 +6,14 @@
 
 #include "board.h"
 #include "ledmatrix.h"
+#include "communication.h"
 
 Board board;
 LEDMatrix leds;
+Communication communication;
 
 void setup() {
-	Serial.begin(9600);
-
+	communication.begin();
 	board.begin();
 	leds.begin();
 }
@@ -24,7 +25,6 @@ CRGB setLEDColor(uint8_t idx) {
 
 void loop() {
 	board.scan();
-	// board.print();
+	communication.tick();
 	leds.showLEDs(&setLEDColor);
-	delay(10);
 }
