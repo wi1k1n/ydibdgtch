@@ -13,12 +13,12 @@ LEDMatrix leds;
 Communication communication;
 
 void setup() {
-	communication.begin();
+	communication.begin(0x8);
 	board.begin();
 	leds.begin();
 }
 
-CRGB setLEDColor(uint8_t idx) {
+CellCRGB setLEDColor(uint8_t idx) {
 	bool val = board.getState(idx);
 	return val ? CRGB(0xFFFFFF) : CRGB(0x0);
 }

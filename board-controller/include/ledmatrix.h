@@ -23,7 +23,6 @@ public:
 	bool begin();
 
 	void showLEDs(CellCRGB (*check)(uint8_t idx));
-	void showLEDs(CRGB (*check)(uint8_t idx));
 };
 
 #endif // LEDMATRIX_H__

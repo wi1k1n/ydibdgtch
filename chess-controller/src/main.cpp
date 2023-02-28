@@ -13,5 +13,6 @@ void setup() {
 }
 
 void loop() {
+  board.tick();
   wifiManager.tick();
 }

@@ -1,16 +1,12 @@
 #ifndef COMMUNICATION_H__
 #define COMMUNICATION_H__
 
-#include "constants.h"
-
 #include <Arduino.h>
+#include "commands.h"
 
 class Communication {
 public:
-	Communication() = default;
-
-	bool begin(uint8_t addr);
-	void tick();
+	static void SendCommand(Commands cmd, void* payload = nullptr);
 };
 
 #endif // COMMUNICATION_H__

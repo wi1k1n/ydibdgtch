@@ -43,6 +43,3 @@ void LEDMatrix::showLEDs(CellCRGB (*check)(uint8_t idx)) {
 	}
 	FastLED.show();
 }
-void LEDMatrix::showLEDs(CRGB (*check)(uint8_t idx)) {
-	showLEDs(check);
-}
