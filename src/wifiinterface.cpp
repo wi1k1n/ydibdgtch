@@ -1,7 +1,7 @@
-#include "wifi.h"
+#include "wifiinterface.h"
 
 DNSServer WiFiManager::_dnsServer;
-ESP8266WebServer WiFiManager::_webServer;
+WebServer WiFiManager::_webServer;
 bool WiFiManager::_startedSuccessfully = false;
 
 bool WiFiManager::_redirectToCaptivePortal() {

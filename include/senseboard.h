@@ -1,5 +1,5 @@
-#ifndef BOARD_H__
-#define BOARD_H__
+#ifndef SENSEBOARD_H__
+#define SENSEBOARD_H__
 
 #include "constants.h"
 
@@ -10,10 +10,10 @@ const uint8_t PINS_OUTPUT[] = PINS_OUTPUT_LIST;
 constexpr uint8_t PINS_INPUT_SIZE = sizeof(PINS_INPUT) / sizeof(PINS_INPUT[0]);
 constexpr uint8_t PINS_OUTPUT_SIZE = sizeof(PINS_OUTPUT) / sizeof(PINS_OUTPUT[0]);
 
-class Board {
+class SenseBoard {
 	uint8_t _states[8];
 public:
-	Board() = default;
+	SenseBoard() = default;
 
 	bool begin();
 	void scan();
@@ -25,4 +25,4 @@ public:
 	uint8_t getActiveStatesCount() const;
 };
 
-#endif // BOARD_H__
+#endif // SENSEBOARD_H__

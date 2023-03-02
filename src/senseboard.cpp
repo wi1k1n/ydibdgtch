@@ -1,6 +1,6 @@
-#include "board.h"
+#include "senseboard.h"
 
-bool Board::begin() {
+bool SenseBoard::begin() {
 	for (uint8_t i = 0; i < PINS_INPUT_SIZE; ++i)
 		pinMode(PINS_INPUT[i], INPUT_PULLUP);
 	for (uint8_t i = 0; i < PINS_OUTPUT_SIZE; ++i)
@@ -8,7 +8,7 @@ bool Board::begin() {
 	return true;
 }
 
-void Board::scan() {
+void SenseBoard::scan() {
 	for (uint8_t idxOut = 0; idxOut < PINS_OUTPUT_SIZE; ++idxOut) {
 		uint8_t pinOut = PINS_OUTPUT[idxOut];
 		digitalWrite(pinOut, LOW);
@@ -18,23 +18,23 @@ void Board::scan() {
 	}
 }
 
-bool Board::getState(uint8_t row, uint8_t col) const {
+bool SenseBoard::getState(uint8_t row, uint8_t col) const {
 	return !((_states[row] >> col) & 1u);
 }
 
-void Board::setState(uint8_t row, uint8_t col, bool val) {
+void SenseBoard::setState(uint8_t row, uint8_t col, bool val) {
 	_states[row] ^= (-static_cast<int8_t>(!val) ^ _states[row]) & (1u << col);
 }
 
-bool Board::getState(uint8_t idx) const {
+bool SenseBoard::getState(uint8_t idx) const {
 	return getState(idx / 8, idx % 8);
 }
 
-void Board::setState(uint8_t idx, bool val) {
+void SenseBoard::setState(uint8_t idx, bool val) {
 	return setState(idx / 8, idx % 8, val);
 }
 
-void Board::print() const {
+void SenseBoard::print() const {
 	for (uint8_t i = 0; i < 8; ++i) {
 		for (uint8_t j = 0; j < 8; ++j)
 			Serial.print(getState(i, j));
@@ -44,7 +44,7 @@ void Board::print() const {
 	Serial.println();
 }
 
-uint8_t Board::getActiveStatesCount() const {
+uint8_t SenseBoard::getActiveStatesCount() const {
 	uint8_t sum = 0;
 	for (uint8_t i = 0; i < 8; ++i) {
 		uint8_t state = _states[i];

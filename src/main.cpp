@@ -4,21 +4,21 @@
 
 #include <Arduino.h>
 
-#include "board.h"
+#include "senseboard.h"
 #include "ledmatrix.h"
-#include "communication.h"
+#include "wifiinterface.h"
 
-Board board;
+SenseBoard board;
 LEDMatrix leds;
-Communication communication;
+WiFiManager wifiManager;
 
 void setup() {
 #ifdef _DEBUG_
-	Serial.begin(9600);
+	Serial.begin(SERIAL_BAUDRATE);
 #endif
-	communication.begin(0x8);
 	board.begin();
 	leds.begin();
+	wifiManager.begin();
 }
 
 CellCRGB setLEDColor(uint8_t idx) {
@@ -31,7 +31,7 @@ void loop() {
 #ifdef _DEBUG_
 	board.print();
 #endif
-	communication.tick();
+	wifiManager.tick();
 	leds.showLEDs(&setLEDColor);
 	// delay(1000);
 }

@@ -1,19 +1,19 @@
-#ifndef WIFI_H__
-#define WIFI_H__
+#ifndef WIFIINTERFACE_H__
+#define WIFIINTERFACE_H__
 
 #include "constants.h"
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <WiFiClient.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
+#include <WebServer.h>
+#include <mdns.h>
 #include <DNSServer.h>
 #include <EEPROM.h>
 
 class WiFiManager {
 	static DNSServer _dnsServer;
-	static ESP8266WebServer _webServer;
+	static WebServer _webServer;
 	static bool _startedSuccessfully;
 
 	static void _sendWebServerHeaders(bool startSendingContent = true);
@@ -30,4 +30,4 @@ public:
 	void tick();
 };
 
-#endif // WIFI_H__
+#endif // WIFIINTERFACE_H__
