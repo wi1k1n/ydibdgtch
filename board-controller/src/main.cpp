@@ -16,7 +16,7 @@ void setup() {
 #ifdef _DEBUG_
 	Serial.begin(9600);
 #endif
-	communication.begin();
+	communication.begin(0x8);
 	board.begin();
 	leds.begin();
 }

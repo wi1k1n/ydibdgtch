@@ -6,6 +6,7 @@
 class BoardController {
 public:
 	bool begin();
+	void tick();
 };
 
 #endif // BOARDCONTROLLER_H__
