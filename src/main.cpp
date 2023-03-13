@@ -7,6 +7,7 @@
 #include "ledmatrix.h"
 #include "wifiinterface.h"
 #include "button.h"
+#include "rulesengine.h"
 
 enum class ControllerMode {
 	GAME_RUNNING = 0,
@@ -20,11 +21,13 @@ LEDMatrix leds;
 PushButton btn;
 
 ControllerMode mode = ControllerMode::GAME_PAUSED;
+ChessGameState tempState;
 
 void setup() {
 #ifdef _DEBUG_
 	Serial.begin(SERIAL_BAUDRATE);
 #endif
+	Serial.println(tempState.toString());
 	// if (!btn.init(PIN_PUSHBUTTON1))
 	// 	return;
 	board.init();
