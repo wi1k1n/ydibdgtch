@@ -18,20 +18,21 @@ bool WiFiManager::_redirectToCaptivePortal() {
 	return false;
 }
 
-bool WiFiManager::begin() {
-	Serial.begin(SERIAL_BAUDRATE);
-	Serial.println();
-
-	if (!WiFi.hostname(WIFI_AP_HOSTNAME)) // Set the DHCP hostname assigned to ourselves
-		return false;
+bool WiFiManager::init() {
+	// if (!WiFi.hostname(WIFI_AP_HOSTNAME)) { // Set the DHCP hostname assigned to ourselves
+	// 	Serial.println("Couldn't set dhcp hostname");
+	// 	return false;
+	// }
 
 	// Create Soft Access Point
 	WiFi.disconnect();
 	Serial.print("Soft AP ");
-	if (!WiFi.softAPConfig(WIFI_AP_IP, WIFI_AP_IP, WIFI_AP_NETMASK))
+	if (!WiFi.softAPConfig(WIFI_AP_IP, WIFI_AP_IP, WIFI_AP_NETMASK)) {
+		Serial.println("Couldn't do Soft AP config!");
 		return false;
+	}
 	if (!WiFi.softAP(WIFI_AP_HOSTNAME, WIFI_AP_PASSWORD)) {
-		Serial.println("error");
+		Serial.println("Couldn't start Soft AP!");
 		return false;
 	}
 	Serial.println("OK");

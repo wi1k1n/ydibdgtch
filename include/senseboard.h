@@ -15,7 +15,7 @@ class SenseBoard {
 public:
 	SenseBoard() = default;
 
-	bool begin();
+	bool init();
 	void scan();
 	bool getState(uint8_t row, uint8_t col) const;
 	void setState(uint8_t row, uint8_t col, bool val);

@@ -26,7 +26,7 @@ class WiFiManager {
 public:
 	WiFiManager() = default;
 
-	bool begin();
+	bool init();
 	void tick();
 };
 

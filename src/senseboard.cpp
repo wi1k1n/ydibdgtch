@@ -1,8 +1,12 @@
 #include "senseboard.h"
 
-bool SenseBoard::begin() {
+bool SenseBoard::init() {
 	for (uint8_t i = 0; i < PINS_INPUT_SIZE; ++i)
+#ifdef ESP_WIRING
+		pinMode(PINS_INPUT[i], INPUT_PULLDOWN);
+#else
 		pinMode(PINS_INPUT[i], INPUT_PULLUP);
+#endif
 	for (uint8_t i = 0; i < PINS_OUTPUT_SIZE; ++i)
 		pinMode(PINS_OUTPUT[i], OUTPUT);
 	return true;
@@ -11,10 +15,22 @@ bool SenseBoard::begin() {
 void SenseBoard::scan() {
 	for (uint8_t idxOut = 0; idxOut < PINS_OUTPUT_SIZE; ++idxOut) {
 		uint8_t pinOut = PINS_OUTPUT[idxOut];
-		digitalWrite(pinOut, LOW);
-		for (uint8_t idxIn = 0; idxIn < PINS_INPUT_SIZE; ++idxIn)
-			setState(idxIn, idxOut, !digitalRead(PINS_INPUT[idxIn])); // in and out are swapped, due to hardware wiring specialties, LOW -> reedswitch closed, HIGH - opened
+#ifdef ESP_WIRING
 		digitalWrite(pinOut, HIGH);
+#else
+		digitalWrite(pinOut, LOW);
+#endif
+		for (uint8_t idxIn = 0; idxIn < PINS_INPUT_SIZE; ++idxIn)
+#ifdef ESP_WIRING
+			setState(idxOut, idxIn, digitalRead(PINS_INPUT[idxIn]));
+#else
+			setState(idxIn, idxOut, !digitalRead(PINS_INPUT[idxIn]));
+#endif
+#ifdef ESP_WIRING
+		digitalWrite(pinOut, LOW);
+#else
+		digitalWrite(pinOut, HIGH);
+#endif
 	}
 }
 

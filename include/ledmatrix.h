@@ -20,7 +20,7 @@ class LEDMatrix {
 	CRGB _leds[_LEDMATRIX_LEDS_COUNT];
 public:
 	LEDMatrix() = default;
-	bool begin();
+	bool init();
 
 	void showLEDs(CellCRGB (*check)(uint8_t idx));
 };

@@ -6,7 +6,7 @@ CellCRGB::CellCRGB(const CRGB& clr) {
 		colors[j] = clr;
 }
 
-bool LEDMatrix::begin() {
+bool LEDMatrix::init() {
 	FastLED.addLeds<WS2811, PIN_LEDS, GRB>(_leds, _LEDMATRIX_LEDS_COUNT).setCorrection(TypicalSMD5050).setTemperature(HighNoonSun); // UncorrectedColor
 	FastLED.setBrightness(10);
 	pinMode(PIN_LEDS, OUTPUT);
@@ -16,7 +16,7 @@ bool LEDMatrix::begin() {
 
 void LEDMatrix::showLEDs(CellCRGB (*check)(uint8_t idx)) {
 #ifdef _DEBUG_
-	const uint8_t dbgLedsCols = 3;
+	const uint8_t dbgLedsCols = 8;
 	const uint8_t dbgLedsRows = 2;
 #endif
 	for (uint8_t i = 0; i < 64; ++i) {

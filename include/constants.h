@@ -6,13 +6,26 @@
 #include "secret.h"
 
 #define _DEBUG_ 1
-#define SERIAL_BAUDRATE 9600
+#define SERIAL_BAUDRATE 115200
 
-#define PIN_REED_SWITCH 2
-#define PIN_LEDS 13
+#define PIN_LEDS 			GPIO_NUM_4
+#define PIN_PUSHBUTTON1		GPIO_NUM_21
 
-#define PINS_INPUT_LIST { 2, 3 }
-#define PINS_OUTPUT_LIST { 11, 12, 14/*A0*/ }
+#define PINS_INPUT_LIST { \
+			GPIO_NUM_14, \
+			GPIO_NUM_27, \
+			GPIO_NUM_26, \
+			GPIO_NUM_25, \
+			GPIO_NUM_13, \
+			GPIO_NUM_12, \
+			GPIO_NUM_33, \
+			GPIO_NUM_32 \
+		} // esp32 -> diodes
+#define PINS_OUTPUT_LIST { \
+			GPIO_NUM_16, \
+			GPIO_NUM_17 \
+		} // esp32 -> reed switches
+#define ESP_WIRING // undef this if Arduino wiring is used
 
 #define LEDMATRIX_CONSEQUENT_LEDS_COUNT 2
 
