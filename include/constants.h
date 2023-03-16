@@ -6,6 +6,7 @@
 #include "secret.h"
 
 #define _DEBUG_ 1
+#define _CHRULESDBG_ 1
 #define SERIAL_BAUDRATE 115200
 
 #define PIN_LEDS 			GPIO_NUM_4

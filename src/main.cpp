@@ -21,7 +21,6 @@ LEDMatrix leds;
 PushButton btn;
 
 ControllerMode mode = ControllerMode::GAME_PAUSED;
-ChessGameState tempState;
 ClassicChessRules engine;
 
 void setup() {
@@ -29,10 +28,13 @@ void setup() {
 	Serial.begin(SERIAL_BAUDRATE);
 #endif
 	Serial.println();
-	Serial.println(tempState.toString());
+	Serial.print(F("Chess rules engine: "));
 	Serial.println(engine.toString());
 
 	ChessGameState state = engine.getStartingState();
+	state.set(3, 1, { CHESSPIECE::BISHOP, CHESSCOLOR::BLACK });
+	Serial.println(state.toString());
+
 	auto moves = engine.getValidMovesForPiece(state, {1, 1});
 	Serial.print(F("Generated following moves #"));
 	Serial.println(moves.size());

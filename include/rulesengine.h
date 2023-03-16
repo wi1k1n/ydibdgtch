@@ -27,6 +27,7 @@ enum class CHESSINITIALSTATE {
 };
 
 struct ChessPiece {
+	// getters should be adjusted if bitness is changed
 	uint8_t _piece : 4;
 	uint8_t _color : 2;
 	uint8_t _history : 1; // extra info flag - king: was moved before; pawn: susceptible to en-passant
@@ -43,11 +44,18 @@ struct ChessPiece {
 	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
 	void setColor(CHESSCOLOR color) { _color = static_cast<uint8_t>(color); }
 	void setHistory(bool value) { _history = value; }
+	CHESSPIECE getPiece() const { return static_cast<CHESSPIECE>(_piece == 0b00001111 ? -1 : _piece); }
+	CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
+	bool getHistory() const { return static_cast<bool>(_history); }
 
 	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
 
 #ifdef _DEBUG_
-	String toString() const { return String(_color ? 'b' : 'w') + _pieceSymbols[_piece]; }
+	String toString(bool symbolic = true) const { 
+		if (symbolic)
+			return String(getColor() == CHESSCOLOR::BLACK ? 'b' : (getColor() == CHESSCOLOR::WHITE ? 'w' : '?')) + _pieceSymbols[_piece];
+		return String(_color) + "-" + String(_piece) + "." + String(_history);
+	}
 #endif
 };
 struct ChessPieceLocation {
@@ -66,7 +74,11 @@ struct ChessPieceLocation {
 
 	bool operator==(const ChessPieceLocation& other) const { return _row == other._row && _col == other._col; }
 
-	String toString() const { return String(static_cast<char>('a' + _row)) + _col; }
+	String toString(bool symbolic = true) const {
+		if (symbolic)
+			return String(static_cast<char>('a' + _col)) + String(_row + 1);
+		return String(_row) + ":" + String(_col);
+	}
 };
 
 namespace std {
@@ -93,11 +105,12 @@ public:
 
 	ChessPiece at(const ChessPieceLocation& location) const;
 	ChessPiece at(uint8_t row, uint8_t col) const;
+	void set(const ChessPieceLocation& location, const ChessPiece& piece);
+	void set(uint8_t row, uint8_t col, const ChessPiece& piece);
 	
-	// returns color of the piece at given location. UNKNOWN if not occupied.
-	CHESSCOLOR isLocationOccupied(const ChessPieceLocation& location) const;
+	bool isLocationOccupied(const ChessPieceLocation& location) const;
 	
-	String toString() const;
+	String toString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
 	bool operator==(const ChessGameState& other) const { return _pieces == other._pieces; }
 };
 
