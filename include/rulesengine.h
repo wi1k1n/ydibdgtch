@@ -2,6 +2,7 @@
 #define RULESENGINE_H__
 
 #include "constants.h"
+#include "utilities.h"
 
 #include <vector>
 #include <unordered_map>
@@ -39,6 +40,7 @@ struct ChessPiece {
 		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)), _history(history) { }
 	ChessPiece(const ChessPiece& piece) 
 		: _piece(piece._piece), _color(piece._color), _history(piece._history) { }
+	ChessPiece(const String& s);
 	~ChessPiece() {}
 
 	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
@@ -50,13 +52,7 @@ struct ChessPiece {
 
 	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
 
-#ifdef _DEBUG_
-	String toString(bool symbolic = true) const { 
-		if (symbolic)
-			return String(getColor() == CHESSCOLOR::BLACK ? 'b' : (getColor() == CHESSCOLOR::WHITE ? 'w' : '?')) + _pieceSymbols[_piece];
-		return String(_color) + "-" + String(_piece) + "." + String(_history);
-	}
-#endif
+	String toString(bool symbolic = true) const;
 };
 struct ChessPieceLocation {
 	uint8_t _row : 3;
@@ -68,9 +64,11 @@ struct ChessPieceLocation {
 	ChessPieceLocation(const ChessPieceLocation& piece) {
 		setLocation(piece._row, piece._col);
 	}
+	ChessPieceLocation(const String& s);
 	~ChessPieceLocation() {}
 
 	void setLocation(uint8_t row, uint8_t col) { _row = row; _col = col; }
+	bool isOnBoard() const { return _col >= 0 && _col < 8 && _row >= 0 && _row < 8; }
 
 	bool operator==(const ChessPieceLocation& other) const { return _row == other._row && _col == other._col; }
 
@@ -105,8 +103,11 @@ public:
 
 	ChessPiece at(const ChessPieceLocation& location) const;
 	ChessPiece at(uint8_t row, uint8_t col) const;
+	ChessPiece at(const String& s) const; // only lower case!
 	void set(const ChessPieceLocation& location, const ChessPiece& piece);
 	void set(uint8_t row, uint8_t col, const ChessPiece& piece);
+	void set(const String& location, const ChessPiece& piece);
+	void set(const String& location, const String& piece);
 	
 	bool isLocationOccupied(const ChessPieceLocation& location) const;
 	
@@ -123,8 +124,6 @@ class ChessGameStatesResolver {
 };
 
 class ChessRulesEngine {
-protected:
-	static bool isLocationOnBoard(const ChessPieceLocation& location);
 public:
 	ChessRulesEngine() = default;
 	ChessRulesEngine(const ChessRulesEngine&) = delete;

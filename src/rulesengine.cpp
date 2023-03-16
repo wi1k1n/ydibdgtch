@@ -3,6 +3,57 @@
 
 char ChessPiece::_pieceSymbols[] = { 'p', 'N', 'B', 'R', 'Q', 'K' };
 
+ChessPiece::ChessPiece(const String& s) 
+	: _piece(static_cast<uint8_t>(CHESSPIECE::UNKNOWN)), _color(static_cast<uint8_t>(CHESSCOLOR::UNKNOWN)), _history(0) {
+#ifdef _CHRULESDBG_
+	Serial.print(F("Constructing chess piece from string: "));
+	Serial.println(s);
+#endif
+
+	if (s.length() < 2)
+		return;
+	
+	const char clr = s[0];
+	if (clr == 'b')
+		_color = static_cast<uint8_t>(CHESSCOLOR::BLACK);
+	else if (clr == 'w')
+		_color = static_cast<uint8_t>(CHESSCOLOR::WHITE);
+	
+	const char pieceSymbol = s[1];
+	uint8_t pieceSymbolsCount = countof(_pieceSymbols);
+	for (uint8_t i = 0; i < pieceSymbolsCount; ++pieceSymbolsCount) {
+		if (pieceSymbol == _pieceSymbols[i]) {
+			_piece = i;
+			break;
+		}
+	}
+
+	if (s.length() > 2)
+		_history = s[2] == '.';
+
+#ifdef _CHRULESDBG_
+	Serial.print(F("   success: "));
+	Serial.println(toString());
+#endif
+}
+
+String ChessPiece::toString(bool symbolic) const { 
+	if (symbolic)
+		return String(getColor() == CHESSCOLOR::BLACK ? 'b' : (getColor() == CHESSCOLOR::WHITE ? 'w' : '?')) + (_piece < countof(_pieceSymbols) ? _pieceSymbols[_piece] : '?');
+	return String(_color) + "-" + String(_piece) + "." + String(_history);
+}
+
+ChessPieceLocation::ChessPieceLocation(const String& s)
+	: _row(-1), _col(-1) {
+	if (s.length() != 2)
+		return;
+	
+	const char row = s[1];
+	const char col = s[0];
+	_row = (row < '1' || row > '8') ? -1 : (row - '1');
+	_col = (col >= 'A' && col <= 'H') ? (col - 'A') : ((col >= 'a' && col <= 'h') ? col - 'a' : -1);
+}
+
 ChessGameState::ChessGameState(const CHESSINITIALSTATE& initState, const CHESSCOLOR& colorToMove) {
 	_colorToMove = colorToMove;
 	if (initState == CHESSINITIALSTATE::CLASSIC) {
@@ -60,9 +111,9 @@ String ChessGameState::toString(bool legend, bool transpose, bool zeroBased) con
 	if (legend && !transpose)
 		drawColLegend();
 
-	int8_t rowStart = 7 * transpose + 0; // transpose ? 7 : 0;
-	int8_t rowEnd = -9 * transpose + 8; // transpose ? -1 : 8;
-	int8_t rowIncrement = -2 * transpose + 1; // transpose ? -1 : 1;
+	const int8_t rowStart = 7 * transpose + 0; // transpose ? 7 : 0;
+	const int8_t rowEnd = -9 * transpose + 8; // transpose ? -1 : 8;
+	const int8_t rowIncrement = -2 * transpose + 1; // transpose ? -1 : 1;
 	for (int8_t row = rowStart; row != rowEnd; row += rowIncrement) {
 		if (legend)
 			res += String(row + (!zeroBased)) + "   ";
@@ -97,22 +148,28 @@ ChessPiece ChessGameState::at(const ChessPieceLocation& location) const {
 ChessPiece ChessGameState::at(uint8_t row, uint8_t col) const {
 	return at(ChessPieceLocation{ row, col });
 }
+ChessPiece ChessGameState::at(const String& s) const {
+	if (s.length() != 2)
+		return ChessPiece();
+	return at(ChessPieceLocation(s));
+}
 void ChessGameState::set(const ChessPieceLocation& location, const ChessPiece& piece) {
+	if (!location.isOnBoard())
+		return;
 	_pieces.insert(std::make_pair(location, piece));
 }
 void ChessGameState::set(uint8_t row, uint8_t col, const ChessPiece& piece) {
 	set(ChessPieceLocation{ row, col }, piece);
 }
-
-bool ChessRulesEngine::isLocationOnBoard(const ChessPieceLocation& location) {
-	bool ret = location._col >= 0 && location._col < 8 && location._row >= 0 && location._row < 8;
-#ifdef _CHRULESDBG_
-	Serial.print(F("isLocationOnBoard: "));
-	Serial.print(location.toString(0));
-	Serial.print(F(" = "));
-	Serial.println(ret);
-#endif
-	return ret;
+void ChessGameState::set(const String& location, const ChessPiece& piece) {
+	if (location.length() != 2)
+		return;
+	set(ChessPieceLocation(location), piece);
+}
+void ChessGameState::set(const String& location, const String& piece) {
+	if (location.length() != 2 || piece.length() < 2)
+		return;
+	set(location, ChessPiece(piece));
 }
 
 std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const {
@@ -144,15 +201,15 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 			int8_t dir = clr == CHESSCOLOR::WHITE ? 1 : -1;
 			// single forward move
 			ChessPieceLocation singleForward{ static_cast<int8_t>(row) + dir, col };
-			if (isLocationOnBoard(singleForward) && state.at(singleForward).getColor() == CHESSCOLOR::UNKNOWN) {
+			if (singleForward.isOnBoard() && state.at(singleForward).getColor() == CHESSCOLOR::UNKNOWN) {
 				moves.push_back(singleForward);
 #ifdef _CHRULESDBG_
 				Serial.println(F(">>> single forward"));
 #endif
 				// double forward move
-				bool isOnInitialRow = location._row == ((7 + dir) % 7);
+				bool isOnInitialRow = location._row == ((7 + dir) % 7); // 1 for white, 6 for black
 				ChessPieceLocation doubleForward{ static_cast<int8_t>(row) + dir * 2, col };
-				if (isOnInitialRow && isLocationOnBoard(doubleForward) && state.at(doubleForward).getColor() == CHESSCOLOR::UNKNOWN) {
+				if (isOnInitialRow && doubleForward.isOnBoard() && state.at(doubleForward).getColor() == CHESSCOLOR::UNKNOWN) {
 					moves.push_back(doubleForward);
 #ifdef _CHRULESDBG_
 					Serial.println(F(">>> double forward"));
@@ -160,13 +217,30 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 				}
 			}
 			// diagonal moves
+			bool isOnEnPassantRow = location._row == ((dir + 1) / 2 + 3); // 4 for white, 3 for black
 			for (int8_t dx = -1; dx < 2; dx += 2) {
+				// ordinary diagonal
 				ChessPieceLocation diagonal{ static_cast<int8_t>(row) + dir, col + dx };
-				if (isLocationOnBoard(diagonal) && state.at(diagonal).getColor() == clrOpposite) {
+				if (diagonal.isOnBoard() && state.at(diagonal).getColor() == clrOpposite) {
 					moves.push_back(diagonal);
 #ifdef _CHRULESDBG_
-					Serial.println(F(">>> diagonal"));
+					Serial.print(F(">>> diagonal "));
+					Serial.println(dir > 0 ? F("right") : F("left"));
 #endif
+				}
+				// en-passant
+				if (!isOnEnPassantRow)
+					continue;
+				ChessPieceLocation diagEnPassant{ static_cast<int8_t>(row), col + dx };
+				if (diagEnPassant.isOnBoard()) {
+					ChessPiece pieceOpp = state.at(diagEnPassant);
+					if (pieceOpp.getColor() == clrOpposite && pieceOpp.getPiece() == CHESSPIECE::PAWN && pieceOpp.getHistory()) {
+						moves.push_back(diagEnPassant);
+#ifdef _CHRULESDBG_
+						Serial.print(F(">>> en-passant "));
+						Serial.println(dir > 0 ? F("right") : F("left"));
+#endif
+					}
 				}
 			}
 			break;

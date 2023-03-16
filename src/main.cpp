@@ -32,10 +32,11 @@ void setup() {
 	Serial.println(engine.toString());
 
 	ChessGameState state = engine.getStartingState();
-	state.set(3, 1, { CHESSPIECE::BISHOP, CHESSCOLOR::BLACK });
+	state.set("c5", "bp.");
+	state.set("d4", "wp.");
 	Serial.println(state.toString());
 
-	auto moves = engine.getValidMovesForPiece(state, {1, 1});
+	auto moves = engine.getValidMovesForPiece(state, { "d4" });
 	Serial.print(F("Generated following moves #"));
 	Serial.println(moves.size());
 	for (auto loc : moves) {
