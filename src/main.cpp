@@ -22,12 +22,24 @@ PushButton btn;
 
 ControllerMode mode = ControllerMode::GAME_PAUSED;
 ChessGameState tempState;
+ClassicChessRules engine;
 
 void setup() {
 #ifdef _DEBUG_
 	Serial.begin(SERIAL_BAUDRATE);
 #endif
+	Serial.println();
 	Serial.println(tempState.toString());
+	Serial.println(engine.toString());
+
+	ChessGameState state = engine.getStartingState();
+	auto moves = engine.getValidMovesForPiece(state, {1, 1});
+	Serial.print(F("Generated following moves #"));
+	Serial.println(moves.size());
+	for (auto loc : moves) {
+		Serial.println(loc.toString());
+	}
+	
 	// if (!btn.init(PIN_PUSHBUTTON1))
 	// 	return;
 	board.init();
@@ -52,9 +64,9 @@ void loop() {
 	// }
 	
 	board.scan();
-#ifdef _DEBUG_
-	board.print();
-#endif
+// #ifdef _DEBUG_
+// 	board.print();
+// #endif
 	// wifiManager.tick();
 	leds.showLEDs(&setLEDColor);
 	delay(100);

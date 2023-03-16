@@ -3,8 +3,8 @@
 
 #include "constants.h"
 
-// #include "vector"
-#include "unordered_map"
+#include <vector>
+#include <unordered_map>
 
 enum class CHESSPIECE {
 	UNKNOWN = -1,
@@ -27,27 +27,28 @@ enum class CHESSINITIALSTATE {
 };
 
 struct ChessPiece {
-	uint8_t _color : 1;
-	uint8_t _piece : 6;
+	uint8_t _piece : 4;
+	uint8_t _color : 2;
+	uint8_t _history : 1; // extra info flag - king: was moved before; pawn: susceptible to en-passant
 #ifdef _DEBUG_
 	static char _pieceSymbols[];
 #endif
 
-	ChessPiece() = default;
-	ChessPiece(CHESSPIECE piece = CHESSPIECE::UNKNOWN, CHESSCOLOR color = CHESSCOLOR::UNKNOWN)
-		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)) { }
-	ChessPiece(const ChessPiece& piece) {
-		_color = piece._color;
-		_piece = piece._piece;
-	}
+	ChessPiece(CHESSPIECE piece = CHESSPIECE::UNKNOWN, CHESSCOLOR color = CHESSCOLOR::UNKNOWN, bool history = false)
+		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)), _history(history) { }
+	ChessPiece(const ChessPiece& piece) 
+		: _piece(piece._piece), _color(piece._color), _history(piece._history) { }
 	~ChessPiece() {}
 
 	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
 	void setColor(CHESSCOLOR color) { _color = static_cast<uint8_t>(color); }
+	void setHistory(bool value) { _history = value; }
 
 	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
 
+#ifdef _DEBUG_
 	String toString() const { return String(_color ? 'b' : 'w') + _pieceSymbols[_piece]; }
+#endif
 };
 struct ChessPieceLocation {
 	uint8_t _row : 3;
@@ -82,64 +83,26 @@ class ChessGameState {
 	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces;
 	CHESSCOLOR _colorToMove = CHESSCOLOR::WHITE;
 
-	void _fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color) {
-		for (uint8_t i = 0; i < 8; ++i)
-			_pieces.emplace(std::make_pair(ChessPieceLocation{ row, i }, ChessPiece{ piece, color }));
-	}
-	void _fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color) {
-		auto it = pieces.begin();
-		for (uint8_t i = 0; i < 8 && it != pieces.end(); ++i, ++it)
-			_pieces.emplace(std::make_pair(ChessPieceLocation{ row, i }, ChessPiece{ *it, color }));
-	}
-	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color) {
-		for (uint8_t i = 0; i < 8; ++i)
-			_pieces.emplace(std::make_pair(ChessPieceLocation{ i, col }, ChessPiece{ piece, color }));
-	}
-	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color) {
-		auto it = pieces.begin();
-		for (uint8_t i = 0; i < 8 && it != pieces.end(); ++i, ++it)
-			_pieces.emplace(std::make_pair(ChessPieceLocation{ i, col }, ChessPiece{ *it, color }));
-	}
+	void _fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
+	void _fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
+	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
+	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
 public:
-	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE) {
-		_colorToMove = colorToMove;
-		if (initState == CHESSINITIALSTATE::CLASSIC) {
-			_pieces.reserve(16);
-			std::initializer_list<CHESSPIECE> startLine = {
-				CHESSPIECE::ROOK,
-				CHESSPIECE::KNIGHT,
-				CHESSPIECE::BISHOP,
-				CHESSPIECE::QUEEN,
-				CHESSPIECE::KING,
-				CHESSPIECE::BISHOP,
-				CHESSPIECE::KNIGHT,
-				CHESSPIECE::ROOK
-			};
-			_fillRow(0, startLine, CHESSCOLOR::WHITE);
-			_fillRow(1, CHESSPIECE::PAWN, CHESSCOLOR::WHITE);
-			_fillRow(6, CHESSPIECE::PAWN, CHESSCOLOR::BLACK);
-			_fillRow(7, startLine, CHESSCOLOR::BLACK);
-		}
-	}
+	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE);
+	ChessGameState(const ChessGameState& other);
+
+	ChessPiece at(const ChessPieceLocation& location) const;
+	ChessPiece at(uint8_t row, uint8_t col) const;
 	
-	String toString() const {
-		String res;
-		for (uint8_t row = 0; row < 8; ++row) {
-			for (uint8_t col = 0; col < 8; ++col) {
-				if (auto entry = _pieces.find({ row, col }); entry != _pieces.end())
-					res += entry->second.toString();
-				else
-					res += "  ";
-				res += "|";
-			}
-			res += '\n';
-		}
-		return res;
-	}
-	bool operator==(const ChessGameState& other) {
-		return _pieces == other._pieces;
-	}
+	// returns color of the piece at given location. UNKNOWN if not occupied.
+	CHESSCOLOR isLocationOccupied(const ChessPieceLocation& location) const;
+	
+	String toString() const;
+	bool operator==(const ChessGameState& other) const { return _pieces == other._pieces; }
 };
+
+typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
+typedef std::pair<ChessGameState, ChessMove> ChessTurn;
 
 // Constructs game states dependencies and resolves state changes
 class ChessGameStatesResolver {
@@ -147,13 +110,31 @@ class ChessGameStatesResolver {
 };
 
 class ChessRulesEngine {
-	virtual ChessGameState getStartingState() const { return ChessGameState(); }
-	virtual bool isStateValid(const ChessGameState& state) const { return true; }
-	virtual bool isStateChangeValid(const ChessGameState& state1, const ChessGameState& state2) const { return true; }
+protected:
+	static bool isLocationOnBoard(const ChessPieceLocation& location);
+public:
+	ChessRulesEngine() = default;
+	ChessRulesEngine(const ChessRulesEngine&) = delete;
+	void operator=(const ChessRulesEngine&) = delete; 
+	
+	virtual ChessGameState getStartingState() const = 0;
+	virtual std::vector<ChessPieceLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const = 0;
+
+	// virtual bool isStateValid(const ChessGameState& state) const = 0;
+	// virtual bool isStateChangeValid(const ChessGameState& state1, const ChessGameState& state2) const = 0;
+	// virtual bool isMoveAllowed(const ChessMove& move) = 0;
+
+	virtual String toString() const { return "ChessRulesEngine"; }
 };
 
 class ClassicChessRules : public ChessRulesEngine {
-	ChessGameState getStartingState() const override { return ChessGameState(CHESSINITIALSTATE::CLASSIC); }
+public:
+	// static ClassicChessRules& Get() { static ClassicChessRules instance; return instance; };
+
+	ChessGameState getStartingState() const override { return ChessGameState(); };
+	std::vector<ChessPieceLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const override;
+
+	String toString() const override { return "ClassicChessRules"; }
 };
 
 #endif // RULESENGINE_H__
