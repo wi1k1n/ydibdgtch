@@ -28,13 +28,12 @@ enum class CHESSINITIALSTATE {
 };
 
 struct ChessPiece {
+	static char _pieceSymbols[];
+
 	// getters should be adjusted if bitness is changed
 	uint8_t _piece : 4;
 	uint8_t _color : 2;
-	uint8_t _history : 1; // extra info flag - king: was moved before; pawn: susceptible to en-passant
-#ifdef _DEBUG_
-	static char _pieceSymbols[];
-#endif
+	uint8_t _history : 1; // extra info flag - king/rook: was moved before; pawn: susceptible to en-passant
 
 	ChessPiece(CHESSPIECE piece = CHESSPIECE::UNKNOWN, CHESSCOLOR color = CHESSCOLOR::UNKNOWN, bool history = false)
 		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)), _history(history) { }
@@ -50,6 +49,8 @@ struct ChessPiece {
 	CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
 	bool getHistory() const { return static_cast<bool>(_history); }
 
+	bool isValid() const { return getPiece() != CHESSPIECE::UNKNOWN && getColor() != CHESSCOLOR::UNKNOWN; }
+
 	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
 
 	String toString(bool symbolic = true) const;
@@ -61,6 +62,8 @@ struct ChessPieceLocation {
 	ChessPieceLocation() = default;
 	ChessPieceLocation(uint8_t row, uint8_t col)
 		: _row(row), _col(col) { }
+	ChessPieceLocation(std::pair<int8_t, int8_t> pair)
+		: _row(pair.first), _col(pair.second) { }
 	ChessPieceLocation(const ChessPieceLocation& piece) {
 		setLocation(piece._row, piece._col);
 	}
@@ -68,7 +71,9 @@ struct ChessPieceLocation {
 	~ChessPieceLocation() {}
 
 	void setLocation(uint8_t row, uint8_t col) { _row = row; _col = col; }
-	bool isOnBoard() const { return _col >= 0 && _col < 8 && _row >= 0 && _row < 8; }
+	bool isOnBoard() const { return isOnBoard(_row, _col); }
+
+	static bool isOnBoard(int8_t row, int8_t col) { return col >= 0 && col < 8 && row >= 0 && row < 8; }
 
 	bool operator==(const ChessPieceLocation& other) const { return _row == other._row && _col == other._col; }
 
@@ -100,6 +105,7 @@ class ChessGameState {
 public:
 	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE);
 	ChessGameState(const ChessGameState& other);
+	ChessGameState(const String& fenString);
 
 	ChessPiece at(const ChessPieceLocation& location) const;
 	ChessPiece at(uint8_t row, uint8_t col) const;

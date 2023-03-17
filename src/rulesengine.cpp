@@ -1,7 +1,10 @@
 #include "rulesengine.h"
-#include <algorithm>
 
-char ChessPiece::_pieceSymbols[] = { 'p', 'N', 'B', 'R', 'Q', 'K' };
+#include <vector>
+#include <algorithm>
+#include <utility>
+
+char ChessPiece::_pieceSymbols[] = { 'p', 'n', 'b', 'r', 'q', 'k' };
 
 ChessPiece::ChessPiece(const String& s) 
 	: _piece(static_cast<uint8_t>(CHESSPIECE::UNKNOWN)), _color(static_cast<uint8_t>(CHESSCOLOR::UNKNOWN)), _history(0) {
@@ -10,26 +13,24 @@ ChessPiece::ChessPiece(const String& s)
 	Serial.println(s);
 #endif
 
-	if (s.length() < 2)
+	if (s.isEmpty())
 		return;
 	
-	const char clr = s[0];
-	if (clr == 'b')
-		_color = static_cast<uint8_t>(CHESSCOLOR::BLACK);
-	else if (clr == 'w')
-		_color = static_cast<uint8_t>(CHESSCOLOR::WHITE);
-	
-	const char pieceSymbol = s[1];
+	char whiteSymbol = s[0];
+	if (whiteSymbol < 'a')
+		whiteSymbol += 'a' - 'A';
+
 	uint8_t pieceSymbolsCount = countof(_pieceSymbols);
-	for (uint8_t i = 0; i < pieceSymbolsCount; ++pieceSymbolsCount) {
-		if (pieceSymbol == _pieceSymbols[i]) {
+	for (uint8_t i = 0; i < pieceSymbolsCount; ++i) {
+		if (whiteSymbol == _pieceSymbols[i]) {
 			_piece = i;
+			_color = static_cast<uint8_t>(s[0] == whiteSymbol ? CHESSCOLOR::BLACK : CHESSCOLOR::WHITE);
 			break;
 		}
 	}
 
-	if (s.length() > 2)
-		_history = s[2] == '.';
+	if (s.length() > 1)
+		_history = s[1] == '.';
 
 #ifdef _CHRULESDBG_
 	Serial.print(F("   success: "));
@@ -37,21 +38,43 @@ ChessPiece::ChessPiece(const String& s)
 #endif
 }
 
-String ChessPiece::toString(bool symbolic) const { 
-	if (symbolic)
-		return String(getColor() == CHESSCOLOR::BLACK ? 'b' : (getColor() == CHESSCOLOR::WHITE ? 'w' : '?')) + (_piece < countof(_pieceSymbols) ? _pieceSymbols[_piece] : '?');
-	return String(_color) + "-" + String(_piece) + "." + String(_history);
+String ChessPiece::toString(bool symbolic) const {
+	String snumeric = String(_color) + "-" + String(_piece) + "." + String(_history);
+	String ssymbolic;
+	if (_piece >= countof(_pieceSymbols) || getColor() == CHESSCOLOR::UNKNOWN)
+		ssymbolic = String('?');
+	else
+		ssymbolic = String(getColor() == CHESSCOLOR::BLACK ? _pieceSymbols[_piece] : (static_cast<char>(_pieceSymbols[_piece] - ('a' - 'A'))));
+
+// #ifdef _CHRULESDBG_
+// 	Serial.print(ssymbolic); Serial.print(" <- "); Serial.println(snumeric);
+// #endif
+	if (!symbolic)
+		return snumeric;
+	return ssymbolic;
 }
 
 ChessPieceLocation::ChessPieceLocation(const String& s)
 	: _row(-1), _col(-1) {
+#ifdef _CHRULESDBG_
+	Serial.print(F("Constructing location from string: "));
+	Serial.println(s);
+#endif
+
 	if (s.length() != 2)
 		return;
 	
 	const char row = s[1];
-	const char col = s[0];
+	char col = s[0];
+	if (col < 'a')
+		col += 'a' - 'A';
 	_row = (row < '1' || row > '8') ? -1 : (row - '1');
-	_col = (col >= 'A' && col <= 'H') ? (col - 'A') : ((col >= 'a' && col <= 'h') ? col - 'a' : -1);
+	_col = (col < 'a' || col > 'h') ? -1 : (col - 'a');
+
+#ifdef _CHRULESDBG_
+	Serial.print(F("   success: "));
+	Serial.println(toString());
+#endif
 }
 
 ChessGameState::ChessGameState(const CHESSINITIALSTATE& initState, const CHESSCOLOR& colorToMove) {
@@ -76,7 +99,11 @@ ChessGameState::ChessGameState(const CHESSINITIALSTATE& initState, const CHESSCO
 }
 
 ChessGameState::ChessGameState(const ChessGameState& other)
-	: _pieces(other._pieces), _colorToMove(other._colorToMove) {}
+	: _pieces(other._pieces), _colorToMove(other._colorToMove) { }
+
+ChessGameState::ChessGameState(const String& fenString) {
+	Serial.println(F("GameState from FEN string is not implemented yet!"));
+}
 
 void ChessGameState::_fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color) {
 	for (uint8_t i = 0; i < 8; ++i)
@@ -102,7 +129,7 @@ String ChessGameState::toString(bool legend, bool transpose, bool zeroBased) con
 	auto drawColLegend = [&res, legend, transpose]() {
 		res += String(transpose ? "\n" : "") + String(legend ? "    " : "");
 		for (uint8_t col = 0; col < 8; ++col)
-			res += String(static_cast<char>('a' + col)) + " " + (col == 7 ? "" : " ");
+			res += " " + String(static_cast<char>('a' + col)) + " " + (col == 7 ? "" : " ");
 		res += '\n';
 		if (!transpose)
 			res += '\n';
@@ -119,7 +146,7 @@ String ChessGameState::toString(bool legend, bool transpose, bool zeroBased) con
 			res += String(row + (!zeroBased)) + "   ";
 		for (uint8_t col = 0; col < 8; ++col) {
 			auto entry = _pieces.find({ static_cast<uint8_t>(row), col });
-			res += (entry == _pieces.end() ? "  " : entry->second.toString()) + (col == 7 ? "" : "|");
+			res += " " + (entry == _pieces.end() ? " " : entry->second.toString()) + " " + (col == 7 ? "" : "|");
 		}
 		res += '\n';
 	}
@@ -137,38 +164,36 @@ bool ChessGameState::isLocationOccupied(const ChessPieceLocation& location) cons
 ChessPiece ChessGameState::at(const ChessPieceLocation& location) const {
 	auto entry = _pieces.find(location);
 	ChessPiece piece = entry != _pieces.end() ? entry->second : ChessPiece();
-#ifdef _CHRULESDBG_
-	Serial.print(F("at: "));
-	Serial.print(location.toString(0));
-	Serial.print(F(" = "));
-	Serial.println(piece.toString(0));
-#endif
+// #ifdef _CHRULESDBG_
+// 	Serial.print(F("at: "));
+// 	Serial.print(location.toString());
+// 	Serial.print(F(" = "));
+// 	Serial.println(piece.toString());
+// #endif
 	return piece;
 }
 ChessPiece ChessGameState::at(uint8_t row, uint8_t col) const {
 	return at(ChessPieceLocation{ row, col });
 }
 ChessPiece ChessGameState::at(const String& s) const {
-	if (s.length() != 2)
-		return ChessPiece();
 	return at(ChessPieceLocation(s));
 }
 void ChessGameState::set(const ChessPieceLocation& location, const ChessPiece& piece) {
 	if (!location.isOnBoard())
 		return;
-	_pieces.insert(std::make_pair(location, piece));
+	if (piece.isValid())
+		_pieces.insert(std::make_pair(location, piece));
+	else
+		_pieces.erase(location);
+
 }
 void ChessGameState::set(uint8_t row, uint8_t col, const ChessPiece& piece) {
 	set(ChessPieceLocation{ row, col }, piece);
 }
 void ChessGameState::set(const String& location, const ChessPiece& piece) {
-	if (location.length() != 2)
-		return;
 	set(ChessPieceLocation(location), piece);
 }
 void ChessGameState::set(const String& location, const String& piece) {
-	if (location.length() != 2 || piece.length() < 2)
-		return;
 	set(location, ChessPiece(piece));
 }
 
@@ -179,9 +204,9 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 	CHESSCOLOR clr = static_cast<CHESSCOLOR>(chessPiece._color);
 #ifdef _CHRULESDBG_
 		Serial.print(F("Generating moves for piece "));
-		Serial.print(chessPiece.toString(0));
+		Serial.print(chessPiece.toString());
 		Serial.print(F(" at location "));
-		Serial.println(location.toString(0));
+		Serial.println(location.toString());
 #endif
 	if (piece == CHESSPIECE::UNKNOWN || clr == CHESSCOLOR::UNKNOWN) {
 #ifdef _DEBUG_
@@ -239,6 +264,36 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 #ifdef _CHRULESDBG_
 						Serial.print(F(">>> en-passant "));
 						Serial.println(dir > 0 ? F("right") : F("left"));
+#endif
+					}
+				}
+			}
+			break;
+		}
+		case CHESSPIECE::KNIGHT: {
+#ifdef _CHRULESDBG_
+			Serial.println(F("> Knight"));
+#endif
+			std::vector<std::tuple<int8_t, int8_t>> dirs;
+			cartesianProduct({ -1, 1 }, { -2, 2 }, back_inserter(dirs));
+
+			for (auto&& pos : dirs) {
+				int8_t first = std::get<0>(pos);
+				int8_t second = std::get<1>(pos);
+				std::vector<std::pair<int8_t, int8_t>> locs = {
+					std::make_pair(row + first, col + second),
+					std::make_pair(row + second, col + first)
+				};
+				for (int8_t flip = 0; flip < 2; ++flip) {
+					std::pair<int8_t, int8_t> locPair = locs[flip];
+					if (!ChessPieceLocation::isOnBoard(locPair.first, locPair.second))
+						continue;
+					ChessPieceLocation loc(locPair);
+					if (loc.isOnBoard() && state.at(loc).getColor() != clr) {
+						moves.push_back(loc);
+#ifdef _CHRULESDBG_
+						Serial.print(F(">>> "));
+						Serial.println(loc.toString());
 #endif
 					}
 				}
