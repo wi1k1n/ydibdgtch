@@ -40,6 +40,7 @@ struct ChessPiece {
 	ChessPiece(const ChessPiece& piece) 
 		: _piece(piece._piece), _color(piece._color), _history(piece._history) { }
 	ChessPiece(const String& s);
+	ChessPiece(char c);
 	~ChessPiece() {}
 
 	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
@@ -54,6 +55,8 @@ struct ChessPiece {
 	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
 
 	String toString(bool symbolic = true) const;
+private:
+	void _initFromChar(char c);
 };
 struct ChessPieceLocation {
 	uint8_t _row : 3;
@@ -97,11 +100,15 @@ class ChessGameState {
 	// std::vector<ChessPiece> _pieces;
 	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces;
 	CHESSCOLOR _colorToMove = CHESSCOLOR::WHITE;
+	uint16_t _fullMoves = 1;
+	uint8_t _halfMoves = 0;
 
 	void _fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
 	void _fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
 	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
 	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
+
+	bool _initFromFEN(const String& fenString);
 public:
 	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE);
 	ChessGameState(const ChessGameState& other);
@@ -118,6 +125,7 @@ public:
 	bool isLocationOccupied(const ChessPieceLocation& location) const;
 	
 	String toString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
+	String toFEN() const;
 	bool operator==(const ChessGameState& other) const { return _pieces == other._pieces; }
 };
 

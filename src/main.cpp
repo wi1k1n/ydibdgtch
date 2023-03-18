@@ -31,12 +31,10 @@ void setup() {
 	Serial.print(F("Chess rules engine: "));
 	Serial.println(engine.toString());
 
-	ChessGameState state = engine.getStartingState();
-	state.set("c5", "p");
-	state.set("d4", "P");
-	state.set("f4", "N");
-	state.set("g1", "");
+	// ChessGameState state = engine.getStartingState();
+	ChessGameState state("rnbqkb1r/pp3ppp/2p1pn2/3p4/2PP4/2N2N2/PP2PPPP/R1BQKB1R w KQkq - 0 1");
 
+	Serial.println(state.toFEN());
 	Serial.println(state.toString());
 
 	auto moves = engine.getValidMovesForPiece(state, { "f4" });
