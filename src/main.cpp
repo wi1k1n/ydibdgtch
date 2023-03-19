@@ -32,12 +32,12 @@ void setup() {
 	Serial.println(engine.toString());
 
 	// ChessGameState state = engine.getStartingState();
-	ChessGameState state("rnbqkb1r/pp3ppp/2p1pn2/3p4/2PP4/2N2N2/PP2PPPP/R1BQKB1R w KQkq - 0 1");
+	ChessGameState state("1nbqkb1r/1p3p1p/2p1p3/3p2p1/2PP2P1/1r2BN1P/2Q1PnB1/R3K2R w KQk - 2 9");
 
 	Serial.println(state.toFEN());
 	Serial.println(state.toString());
 
-	auto moves = engine.getValidMovesForPiece(state, { "f4" });
+	auto moves = engine.getValidMovesForPiece(state, { "e1" });
 	Serial.print(F("Generated following moves #"));
 	Serial.println(moves.size());
 	for (auto loc : moves) {

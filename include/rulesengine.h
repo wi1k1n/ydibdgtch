@@ -59,11 +59,11 @@ private:
 	void _initFromChar(char c);
 };
 struct ChessPieceLocation {
-	uint8_t _row : 3;
-	uint8_t _col : 3;
+	int8_t _row : 4;
+	int8_t _col : 4;
 
 	ChessPieceLocation() = default;
-	ChessPieceLocation(uint8_t row, uint8_t col)
+	ChessPieceLocation(int8_t row, int8_t col)
 		: _row(row), _col(col) { }
 	ChessPieceLocation(std::pair<int8_t, int8_t> pair)
 		: _row(pair.first), _col(pair.second) { }
@@ -73,7 +73,7 @@ struct ChessPieceLocation {
 	ChessPieceLocation(const String& s);
 	~ChessPieceLocation() {}
 
-	void setLocation(uint8_t row, uint8_t col) { _row = row; _col = col; }
+	void setLocation(int8_t row, int8_t col) { _row = row; _col = col; }
 	bool isOnBoard() const { return isOnBoard(_row, _col); }
 
 	static bool isOnBoard(int8_t row, int8_t col) { return col >= 0 && col < 8 && row >= 0 && row < 8; }
@@ -91,7 +91,13 @@ namespace std {
 template<>
 struct hash<ChessPieceLocation> {
 	size_t operator()(const ChessPieceLocation& other) const {
-		return hash<uint8_t>()(other._row) ^ hash<uint8_t>()(other._col);
+		return hash<int8_t>()(other._row) ^ hash<int8_t>()(other._col);
+	}
+};
+template<>
+struct hash<CHESSPIECE> {
+	size_t operator()(const CHESSPIECE& other) const {
+		return hash<int8_t>()(static_cast<int8_t>(other));
 	}
 };
 } // namespace std

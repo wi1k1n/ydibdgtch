@@ -107,6 +107,9 @@ ChessGameState::ChessGameState(const String& fenString) {
 }
 
 bool ChessGameState::_initFromFEN(const String& fenString) {
+	Serial.print("Loading from FEN: ");
+	Serial.println(fenString);
+
 	auto invalidate = [this]() {
 		this->_pieces.clear();
 		this->_colorToMove = CHESSCOLOR::UNKNOWN;
@@ -156,6 +159,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 		if (pieceCounter > 8)
 			return invalidate();
 	}
+	Serial.println("1. Handle pieces placement part");
 
 	// 2. Color to move
 	if (++fenCursor >= fenString.length())
@@ -171,18 +175,27 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 	
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
 		return invalidate();
+	Serial.println("2. Color to move");
 	
 	// 3. Castling options
-	// TODO: implement castling incl. Shredder-FEN standard
-	if (fenCursor + 4 > fenString.length())
+	if (fenCursor >= fenString.length())
 		return invalidate();
-	fenCursor += 4;
-
-	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
-		return invalidate();
+	char castlingCharFirst = fenString[fenCursor++];
+	if (castlingCharFirst != '-') {
+		if (castlingCharFirst == ' ')
+			return invalidate();
+		// TODO: implement castling incl. Shredder-FEN standard
+		uint8_t castlingCharCount = 1;
+		for (; fenCursor < fenString.length(); ++fenCursor, ++castlingCharCount)
+			if (fenString[fenCursor] == ' ')
+				break;
+		if (castlingCharCount > 4)
+			return invalidate();
+	}
+	Serial.println("3. Castling options");
 	
 	// 4. En-passant pawn
-	if (fenCursor >= fenString.length())
+	if (++fenCursor >= fenString.length())
 		return invalidate();
 
 	char epCharFirst = fenString[fenCursor++];
@@ -208,6 +221,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 			invalidate();
 		pawn.setHistory(true);
 	}
+	Serial.println("4. En-passant pawn");
 	
 	// 5. Half-moves since last pawn advance
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
@@ -223,8 +237,9 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 		halfMoves += static_cast<char>(cc);
 	}
 	_halfMoves = halfMoves.toInt();
+	Serial.println("5. Half-moves since last pawn advance");
 	
-	// 5. Full-moves since start
+	// 6. Full-moves since start
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
 		return invalidate();
 	
@@ -240,6 +255,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 	_fullMoves = fullMoves.toInt();
 	if (_fullMoves == 0)
 		return invalidate();
+	Serial.println("6. Full-moves since start");
 	
 	return true;
 }
@@ -377,43 +393,40 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 	ChessPiece chessPiece = state.at(location);
 	CHESSPIECE piece = static_cast<CHESSPIECE>(chessPiece._piece);
 	CHESSCOLOR clr = static_cast<CHESSCOLOR>(chessPiece._color);
-#ifdef _CHRULESDBG_
-		Serial.print(F("Generating moves for piece "));
-		Serial.print(chessPiece.toString());
-		Serial.print(F(" at location "));
-		Serial.println(location.toString());
-#endif
+	Serial.print(F("Generating moves for piece "));
+	Serial.print(chessPiece.toString());
+	Serial.print(F(" at location "));
+	Serial.println(location.toString());
 	if (piece == CHESSPIECE::UNKNOWN || clr == CHESSCOLOR::UNKNOWN) {
-#ifdef _DEBUG_
 		Serial.println(F("No piece at given location"));
-#endif
 		return moves;
 	}
 	uint8_t row = location._row;
 	uint8_t col = location._col;
 	CHESSCOLOR clrOpposite = clr == CHESSCOLOR::WHITE ? CHESSCOLOR::BLACK : CHESSCOLOR::WHITE;
 
+	static std::unordered_map<CHESSPIECE, std::vector<std::pair<int8_t, int8_t>>> dirsMap = {
+		{ CHESSPIECE::KNIGHT, {{-2, -1}, {-2, 1}, {2, -1}, {2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}} },
+		{ CHESSPIECE::BISHOP, {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}} },
+		{ CHESSPIECE::ROOK, {{-1, 0}, {1, 0}, {0, -1}, {0, 1}} },
+		{ CHESSPIECE::QUEEN, {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}, {1, 0}, {0, -1}, {0, 1}} },
+		{ CHESSPIECE::KING, {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}, {1, 0}, {0, -1}, {0, 1}} }
+	};
 	switch (piece) {
 		case CHESSPIECE::PAWN: {
-#ifdef _CHRULESDBG_
 			Serial.println(F("> Pawn"));
-#endif
 			int8_t dir = clr == CHESSCOLOR::WHITE ? 1 : -1;
 			// single forward move
 			ChessPieceLocation singleForward{ static_cast<int8_t>(row) + dir, col };
 			if (singleForward.isOnBoard() && state.at(singleForward).getColor() == CHESSCOLOR::UNKNOWN) {
 				moves.push_back(singleForward);
-#ifdef _CHRULESDBG_
 				Serial.println(F(">>> single forward"));
-#endif
 				// double forward move
 				bool isOnInitialRow = location._row == ((7 + dir) % 7); // 1 for white, 6 for black
 				ChessPieceLocation doubleForward{ static_cast<int8_t>(row) + dir * 2, col };
 				if (isOnInitialRow && doubleForward.isOnBoard() && state.at(doubleForward).getColor() == CHESSCOLOR::UNKNOWN) {
 					moves.push_back(doubleForward);
-#ifdef _CHRULESDBG_
 					Serial.println(F(">>> double forward"));
-#endif
 				}
 			}
 			// diagonal moves
@@ -423,10 +436,8 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 				ChessPieceLocation diagonal{ static_cast<int8_t>(row) + dir, col + dx };
 				if (diagonal.isOnBoard() && state.at(diagonal).getColor() == clrOpposite) {
 					moves.push_back(diagonal);
-#ifdef _CHRULESDBG_
 					Serial.print(F(">>> diagonal "));
 					Serial.println(dir > 0 ? F("right") : F("left"));
-#endif
 				}
 				// en-passant
 				if (!isOnEnPassantRow)
@@ -436,46 +447,46 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 					ChessPiece pieceOpp = state.at(diagEnPassant);
 					if (pieceOpp.getColor() == clrOpposite && pieceOpp.getPiece() == CHESSPIECE::PAWN && pieceOpp.getHistory()) {
 						moves.push_back(diagEnPassant);
-#ifdef _CHRULESDBG_
 						Serial.print(F(">>> en-passant "));
 						Serial.println(dir > 0 ? F("right") : F("left"));
-#endif
 					}
 				}
 			}
+			// TODO: handle promotion
 			break;
 		}
 		case CHESSPIECE::KNIGHT: {
-#ifdef _CHRULESDBG_
 			Serial.println(F("> Knight"));
-#endif
-			// std::vector<std::tuple<int8_t, int8_t>> dirs;
-			// cartesianProduct({ -1, 1 }, { -2, 2 }, back_inserter(dirs));
-			std::vector<std::pair<int8_t, int8_t>> dirs = {{-2, -1}, {-2, 1}, {2, -1}, {2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}};
-			for (auto&& pos : dirs) {
-				int8_t first = std::get<0>(pos);
-				int8_t second = std::get<1>(pos);
-				std::vector<std::pair<int8_t, int8_t>> locs = {
-					std::make_pair(row + first, col + second),
-					std::make_pair(row + second, col + first)
-				};
-				for (int8_t flip = 0; flip < 2; ++flip) {
-					std::pair<int8_t, int8_t> locPair = locs[flip];
-					if (!ChessPieceLocation::isOnBoard(locPair.first, locPair.second))
-						continue;
-					ChessPieceLocation loc(locPair);
-					if (loc.isOnBoard() && state.at(loc).getColor() != clr) {
-						moves.push_back(loc);
-#ifdef _CHRULESDBG_
-						Serial.print(F(">>> "));
-						Serial.println(loc.toString());
-#endif
-					}
-				}
-			}
-			break;
 		}
 		case CHESSPIECE::BISHOP: {
+			Serial.println(F("> Bishop"));
+		}
+		case CHESSPIECE::ROOK: {
+			Serial.println(F("> Rook"));
+		}
+		case CHESSPIECE::QUEEN: {
+			Serial.println(F("> Queen"));
+		}
+		case CHESSPIECE::KING: {
+			// TODO: handle castling
+			Serial.println(F("> King"));
+			auto dirsEntry = dirsMap.find(piece);
+			if (dirsEntry == dirsMap.end()) // sanity check, normally doesn't reach here at all
+				return std::vector<ChessPieceLocation>();
+			std::vector<std::pair<int8_t, int8_t>>& dirs = dirsEntry->second;
+			for (auto&& dir : dirs) {
+				ChessPieceLocation loc(row + dir.first, col + dir.second);
+				while (loc.isOnBoard()) {
+					ChessPiece curPiece = state.at(loc);
+					CHESSCOLOR curClr = curPiece.getColor();
+					if (curClr == clr)
+						break;
+					moves.push_back(loc);
+					if (curClr != CHESSCOLOR::UNKNOWN || piece == CHESSPIECE::KNIGHT || piece == CHESSPIECE::KING) // TODO: store flag for that in the map
+						break;
+					loc.setLocation(loc._row + dir.first, loc._col + dir.second);
+				}
+			}
 			break;
 		}
 		default:
