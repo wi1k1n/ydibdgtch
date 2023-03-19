@@ -1,6 +1,7 @@
 #ifndef RULESENGINE_H__
 #define RULESENGINE_H__
 
+#include "sdk.h"
 #include "constants.h"
 #include "utilities.h"
 
@@ -46,11 +47,12 @@ struct ChessPiece {
 	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
 	void setColor(CHESSCOLOR color) { _color = static_cast<uint8_t>(color); }
 	void setHistory(bool value) { _history = value; }
-	CHESSPIECE getPiece() const { return static_cast<CHESSPIECE>(_piece == 0b00001111 ? -1 : _piece); }
-	CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
+	inline CHESSPIECE getPiece() const { return static_cast<CHESSPIECE>(_piece == 0b00001111 ? -1 : _piece); }
+	inline CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
+	inline CHESSCOLOR getColorOpposite() const { CHESSCOLOR clr = getColor(); return (clr == CHESSCOLOR::BLACK) ? CHESSCOLOR::WHITE : (clr == CHESSCOLOR::WHITE ? CHESSCOLOR::BLACK : clr); }
 	bool getHistory() const { return static_cast<bool>(_history); }
 
-	bool isValid() const { return getPiece() != CHESSPIECE::UNKNOWN && getColor() != CHESSCOLOR::UNKNOWN; }
+	inline bool isValid() const { return getPiece() != CHESSPIECE::UNKNOWN && getColor() != CHESSCOLOR::UNKNOWN; }
 
 	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
 
@@ -74,7 +76,7 @@ struct ChessPieceLocation {
 	~ChessPieceLocation() {}
 
 	void setLocation(int8_t row, int8_t col) { _row = row; _col = col; }
-	bool isOnBoard() const { return isOnBoard(_row, _col); }
+	inline bool isOnBoard() const { return isOnBoard(_row, _col); }
 
 	static bool isOnBoard(int8_t row, int8_t col) { return col >= 0 && col < 8 && row >= 0 && row < 8; }
 
@@ -85,6 +87,15 @@ struct ChessPieceLocation {
 			return String(static_cast<char>('a' + _col)) + String(_row + 1);
 		return String(_row) + ":" + String(_col);
 	}
+};
+
+struct ChessMoveLocation : public ChessPieceLocation {
+	bool _take = 0;
+
+	ChessMoveLocation(const ChessMoveLocation& piece) : ChessPieceLocation(piece), _take(piece._take) { }
+	ChessMoveLocation(int8_t row, int8_t col, bool take = false) : ChessPieceLocation(row, col), _take(take) { }
+	ChessMoveLocation(std::pair<int8_t, int8_t> pair, bool take = false) : ChessPieceLocation(pair), _take(take) { }
+	bool isTaking() const { return _take; }
 };
 
 namespace std {
@@ -127,6 +138,18 @@ public:
 	void set(uint8_t row, uint8_t col, const ChessPiece& piece);
 	void set(const String& location, const ChessPiece& piece);
 	void set(const String& location, const String& piece);
+	void unset(const ChessPieceLocation& location);
+	void unset(uint8_t row, uint8_t col);
+	void unset(const String& location);
+
+	ChessPieceLocation findFirst(CHESSPIECE piece, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
+	ChessPieceLocation findFirst(const ChessPiece& piece) const;
+
+	// TODO: implement iterators
+	const std::unordered_map<ChessPieceLocation, ChessPiece>& getPieces() const { return _pieces; }
+	CHESSCOLOR getColorToMove() const { return _colorToMove; }
+	uint16_t getFullMoves() const { return _fullMoves; }
+	uint8_t getHalfMoves() const { return _halfMoves; }
 	
 	bool isLocationOccupied(const ChessPieceLocation& location) const;
 	
@@ -150,7 +173,12 @@ public:
 	void operator=(const ChessRulesEngine&) = delete; 
 	
 	virtual ChessGameState getStartingState() const = 0;
-	virtual std::vector<ChessPieceLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const = 0;
+
+	// All possible movements for a piece on the board. Takes into account possibility to take and inability to move to an occupied square. Doesn't check for the move's legality.
+	// takesOnly filters out all the non-taking moves
+	virtual std::vector<ChessMoveLocation> getPossibleMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location, bool takesOnly = false) const = 0;
+	// Same as getPossibleMovesForPiece(), but also cheks for moves legality (e.g. if moves are not possible due to opening king for a check)
+	virtual std::vector<ChessMoveLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const = 0;
 
 	// virtual bool isStateValid(const ChessGameState& state) const = 0;
 	// virtual bool isStateChangeValid(const ChessGameState& state1, const ChessGameState& state2) const = 0;
@@ -164,7 +192,13 @@ public:
 	// static ClassicChessRules& Get() { static ClassicChessRules instance; return instance; };
 
 	ChessGameState getStartingState() const override { return ChessGameState(); };
-	std::vector<ChessPieceLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const override;
+	std::vector<ChessMoveLocation> getPossibleMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location, bool takesOnly = false) const override;
+	std::vector<ChessMoveLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const override;
+
+	// returns if "color" colored king is in check
+	bool isCheck(const ChessGameState& state, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
+	bool isMate(const ChessGameState& state, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
+	bool isDraw(const ChessGameState& state) const;
 
 	String toString() const override { return "ClassicChessRules"; }
 };

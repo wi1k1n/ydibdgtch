@@ -32,17 +32,44 @@ void setup() {
 	Serial.println(engine.toString());
 
 	// ChessGameState state = engine.getStartingState();
-	ChessGameState state("1nbqkb1r/1p3p1p/2p1p3/3p2p1/2PP2P1/1r2BN1P/2Q1PnB1/R3K2R w KQk - 2 9");
+	ChessGameState state("k7/1Q6/1K6/8/8/8/8/8 b - - 0 1");
 
 	Serial.println(state.toFEN());
 	Serial.println(state.toString());
 
-	auto moves = engine.getValidMovesForPiece(state, { "e1" });
-	Serial.print(F("Generated following moves #"));
-	Serial.println(moves.size());
-	for (auto loc : moves) {
-		Serial.println(loc.toString());
+
+	// Serial.println(state.findFirst(CHESSPIECE::KING, state.getColorToMove()).toString());
+
+	ChessPieceLocation possibleLocation("a8");
+	Serial.print(F("=== Possible moves for "));
+	Serial.print(possibleLocation.toString());
+	Serial.print(F(": "));
+	for (auto loc : engine.getPossibleMovesForPiece(state, possibleLocation)) {
+		Serial.print(loc.toString());
+		if (loc.isTaking())
+			Serial.print("(x)");
+		Serial.print(" ");
 	}
+	Serial.println();
+
+	ChessPieceLocation validLocation("a8");
+	Serial.print(F("=== Valid moves for "));
+	Serial.print(validLocation.toString());
+	Serial.print(F(": "));
+	for (auto loc : engine.getValidMovesForPiece(state, validLocation)) {
+		Serial.print(loc.toString());
+		if (loc.isTaking())
+			Serial.print("(x)");
+		Serial.print(" ");
+	}
+	Serial.println();
+
+	Serial.print("=== Is check: ");
+	Serial.println(engine.isCheck(state));
+	Serial.print("=== Is mate: ");
+	Serial.println(engine.isMate(state));
+	Serial.print("=== Is draw: ");
+	Serial.println(engine.isDraw(state));
 	
 	// if (!btn.init(PIN_PUSHBUTTON1))
 	// 	return;
