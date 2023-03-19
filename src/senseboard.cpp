@@ -2,44 +2,36 @@
 
 bool SenseBoard::init() {
 	for (uint8_t i = 0; i < PINS_INPUT_SIZE; ++i)
-#ifdef ESP_WIRING
 		pinMode(PINS_INPUT[i], INPUT_PULLDOWN);
-#else
-		pinMode(PINS_INPUT[i], INPUT_PULLUP);
-#endif
 	for (uint8_t i = 0; i < PINS_OUTPUT_SIZE; ++i)
 		pinMode(PINS_OUTPUT[i], OUTPUT);
 	return true;
 }
 
 void SenseBoard::scan() {
-	for (uint8_t idxOut = 0; idxOut < PINS_OUTPUT_SIZE; ++idxOut) {
+	for (uint8_t idxOut = 0; idxOut < PINS_OUTPUT_SIZE; ++idxOut) { // rows / reed_switches
 		uint8_t pinOut = PINS_OUTPUT[idxOut];
-#ifdef ESP_WIRING
-		digitalWrite(pinOut, HIGH);
-#else
-		digitalWrite(pinOut, LOW);
-#endif
-		for (uint8_t idxIn = 0; idxIn < PINS_INPUT_SIZE; ++idxIn)
-#ifdef ESP_WIRING
-			setState(idxOut, idxIn, digitalRead(PINS_INPUT[idxIn]));
-#else
-			setState(idxIn, idxOut, !digitalRead(PINS_INPUT[idxIn]));
-#endif
-#ifdef ESP_WIRING
-		digitalWrite(pinOut, LOW);
-#else
-		digitalWrite(pinOut, HIGH);
-#endif
+		writePin(pinOut, 1);
+		delayMicroseconds(10); // ESP32 is too fast, fine with Arduino
+		for (uint8_t idxIn = 0; idxIn < PINS_INPUT_SIZE; ++idxIn) // cols / diodes
+			setState(idxOut, idxIn, readPin(PINS_INPUT[idxIn]));
+		writePin(pinOut, 0);
 	}
 }
 
+bool SenseBoard::readPin(uint8_t pin) {
+	return digitalRead(pin);
+}
+void SenseBoard::writePin(uint8_t pin, bool val) {
+	digitalWrite(pin, val ? HIGH : LOW);
+}
+
 bool SenseBoard::getState(uint8_t row, uint8_t col) const {
-	return !((_states[row] >> col) & 1u);
+	return (_states[row] >> col) & 1u;
 }
 
 void SenseBoard::setState(uint8_t row, uint8_t col, bool val) {
-	_states[row] ^= (-static_cast<int8_t>(!val) ^ _states[row]) & (1u << col);
+	_states[row] ^= (-static_cast<uint8_t>(val) ^ _states[row]) & (1u << col);
 }
 
 bool SenseBoard::getState(uint8_t idx) const {

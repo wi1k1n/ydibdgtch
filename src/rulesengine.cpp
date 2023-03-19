@@ -135,37 +135,23 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 	
 	for (int8_t rowIdx = 7; rowIdx >= 0; --rowIdx) {
 		const String& row = rows[7 - rowIdx];
-		// Serial.print("Row: ");
-		// Serial.println(row);
 
 		uint8_t pieceCounter = 0;
 		for (uint8_t i = 0; i < row.length(); ++i) {
 			char cc = row[i];
-			// Serial.print(cc);
-			// Serial.println(":");
 			if (cc >= '1' && cc <= '8') {
 				uint8_t n = cc - '0';
-				// Serial.print("n = ");
-				// Serial.print((int)n);
 				if (pieceCounter + n > 8)
 					return invalidate();
-				// for (uint8_t k = 0; k < n; ++k) {
-				// 	// Serial.print("   k");
-				// 	// Serial.print(k);
-				// 	set(rowIdx, pieceCounter++, ChessPiece());
-				// }
 				pieceCounter += n;
-				// Serial.println();
 				continue;
 			}
 			if (pieceCounter > 7)
 				return invalidate();
-			// Serial.print("s = ");
 			ChessPiece piece(cc);
 			if (!piece.isValid())
 				return invalidate();
 			set(rowIdx, pieceCounter++, piece);
-			// Serial.println(piece.toString());
 		}
 		if (pieceCounter > 8)
 			return invalidate();
@@ -463,9 +449,9 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 #ifdef _CHRULESDBG_
 			Serial.println(F("> Knight"));
 #endif
-			std::vector<std::tuple<int8_t, int8_t>> dirs;
-			cartesianProduct({ -1, 1 }, { -2, 2 }, back_inserter(dirs));
-
+			// std::vector<std::tuple<int8_t, int8_t>> dirs;
+			// cartesianProduct({ -1, 1 }, { -2, 2 }, back_inserter(dirs));
+			std::vector<std::pair<int8_t, int8_t>> dirs = {{-2, -1}, {-2, 1}, {2, -1}, {2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}};
 			for (auto&& pos : dirs) {
 				int8_t first = std::get<0>(pos);
 				int8_t second = std::get<1>(pos);
@@ -487,6 +473,9 @@ std::vector<ChessPieceLocation> ClassicChessRules::getValidMovesForPiece(const C
 					}
 				}
 			}
+			break;
+		}
+		case CHESSPIECE::BISHOP: {
 			break;
 		}
 		default:

@@ -68,10 +68,10 @@ void loop() {
 	// }
 	
 	board.scan();
-// #ifdef _DEBUG_
-// 	board.print();
-// #endif
+	// board.print();
+
 	// wifiManager.tick();
 	leds.showLEDs(&setLEDColor);
-	delay(100);
+
+	delay(50);
 }

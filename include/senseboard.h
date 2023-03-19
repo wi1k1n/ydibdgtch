@@ -23,6 +23,9 @@ public:
 	void setState(uint8_t idx, bool val);
 	void print() const;
 	uint8_t getActiveStatesCount() const;
+
+	static bool readPin(uint8_t pin);
+	static void writePin(uint8_t pin, bool val);
 };
 
 #endif // SENSEBOARD_H__

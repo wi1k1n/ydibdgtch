@@ -26,7 +26,6 @@
 			GPIO_NUM_16, \
 			GPIO_NUM_17 \
 		} // esp32 -> reed switches
-#define ESP_WIRING // undef this if Arduino wiring is used
 
 #define LEDMATRIX_CONSEQUENT_LEDS_COUNT 2
 
