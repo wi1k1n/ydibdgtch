@@ -24,7 +24,10 @@
 		} // esp32 -> diodes
 #define PINS_OUTPUT_LIST { \
 			GPIO_NUM_16, \
-			GPIO_NUM_17 \
+			GPIO_NUM_17, \
+			GPIO_NUM_5, \
+			GPIO_NUM_18, \
+			GPIO_NUM_19 \
 		} // esp32 -> reed switches
 
 #define LEDMATRIX_CONSEQUENT_LEDS_COUNT 2

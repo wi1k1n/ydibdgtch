@@ -6,6 +6,8 @@
 #include <Arduino.h>
 #include "FastLED.h"
 
+#include <functional>
+
 const uint8_t _LEDMATRIX_LEDS_COUNT = 8 * 8 * LEDMATRIX_CONSEQUENT_LEDS_COUNT;
 
 struct CellCRGB {
@@ -22,7 +24,11 @@ public:
 	LEDMatrix() = default;
 	bool init();
 
-	void showLEDs(CellCRGB (*check)(uint8_t idx));
+	void showLEDs(std::function<CellCRGB(uint8_t)> check);
+};
+
+class LEDEffect {
+
 };
 
 #endif // LEDMATRIX_H__

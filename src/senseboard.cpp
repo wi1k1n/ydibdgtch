@@ -12,7 +12,7 @@ void SenseBoard::scan() {
 	for (uint8_t idxOut = 0; idxOut < PINS_OUTPUT_SIZE; ++idxOut) { // rows / reed_switches
 		uint8_t pinOut = PINS_OUTPUT[idxOut];
 		writePin(pinOut, 1);
-		delayMicroseconds(10); // ESP32 is too fast, fine with Arduino
+		delayMicroseconds(500); // ESP32 is too fast, fine with Arduino
 		for (uint8_t idxIn = 0; idxIn < PINS_INPUT_SIZE; ++idxIn) // cols / diodes
 			setState(idxOut, idxIn, readPin(PINS_INPUT[idxIn]));
 		writePin(pinOut, 0);
