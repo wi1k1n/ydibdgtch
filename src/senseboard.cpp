@@ -27,11 +27,11 @@ void SenseBoard::writePin(uint8_t pin, bool val) {
 }
 
 bool SenseBoard::getState(uint8_t row, uint8_t col) const {
-	return (_states[row] >> col) & 1u;
+	return _state.get(row, col);
 }
 
 void SenseBoard::setState(uint8_t row, uint8_t col, bool val) {
-	_states[row] ^= (-static_cast<uint8_t>(val) ^ _states[row]) & (1u << col);
+	_state.set(row, col, val);
 }
 
 bool SenseBoard::getState(uint8_t idx) const {
@@ -50,16 +50,4 @@ void SenseBoard::print() const {
 	}
 	Serial.println();
 	Serial.println();
-}
-
-uint8_t SenseBoard::getActiveStatesCount() const {
-	uint8_t sum = 0;
-	for (uint8_t i = 0; i < 8; ++i) {
-		uint8_t state = _states[i];
-		while (state) {
-		sum += state & 1u;
-		state >>= 1u;
-		}
-	}
-	return sum;
 }

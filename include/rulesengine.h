@@ -65,6 +65,8 @@ struct ChessPieceLocation {
 	int8_t _col : 4;
 
 	ChessPieceLocation() = default;
+	ChessPieceLocation(int8_t idx)
+		: _row(idx / 8), _col(idx % 8) { }
 	ChessPieceLocation(int8_t row, int8_t col)
 		: _row(row), _col(col) { }
 	ChessPieceLocation(std::pair<int8_t, int8_t> pair)
@@ -160,11 +162,6 @@ public:
 
 typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
 typedef std::pair<ChessGameState, ChessMove> ChessTurn;
-
-// Constructs game states dependencies and resolves state changes
-class ChessGameStatesResolver {
-
-};
 
 class ChessRulesEngine {
 public:

@@ -33,6 +33,10 @@
 #define LEDMATRIX_CONSEQUENT_LEDS_COUNT 2
 
 
+// Game states resolution
+#define SENSEBOARD_DEBOUNCE_TIME_MS 50
+
+
 // WiFi
 #define WIFI_AP_NAME		"DIY DGT Chessboard"
 #define WIFI_AP_HOSTNAME	"diydgtchessboard"
