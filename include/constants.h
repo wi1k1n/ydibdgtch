@@ -29,7 +29,7 @@
 			GPIO_NUM_18, \
 			GPIO_NUM_19 \
 		} // esp32 -> reed switches
-
+#define SENSEBOARD_SCAN_DELAY_MICROSECONDS 500
 #define LEDMATRIX_CONSEQUENT_LEDS_COUNT 2
 
 

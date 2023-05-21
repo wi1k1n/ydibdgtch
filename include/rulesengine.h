@@ -91,6 +91,7 @@ struct ChessPieceLocation {
 	}
 };
 
+// Same as ChessPieceLocation with extra info (to keep CHessPieceLocation memory footprint small)
 struct ChessMoveLocation : public ChessPieceLocation {
 	bool _take = 0;
 
