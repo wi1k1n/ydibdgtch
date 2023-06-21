@@ -8,7 +8,7 @@
 #include <vector>
 #include <unordered_map>
 
-enum class CHESSPIECE {
+enum class CHESSPIECE : int8_t {
 	UNKNOWN = -1,
 	PAWN = 0,
 	KNIGHT,
@@ -17,12 +17,12 @@ enum class CHESSPIECE {
 	QUEEN,
 	KING
 };
-enum class CHESSCOLOR {
+enum class CHESSCOLOR : int8_t {
 	UNKNOWN = -1,
 	WHITE = 0,
 	BLACK
 };
-enum class CHESSINITIALSTATE {
+enum class CHESSINITIALSTATE : int8_t {
 	UNKNOWN = -1,
 	CLASSIC = 0,
 	EMPTY
@@ -117,8 +117,7 @@ struct hash<CHESSPIECE> {
 } // namespace std
 
 class ChessGameState {
-	// std::vector<ChessPiece> _pieces;
-	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces;
+	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces; // TODO: convert into std::vector<ChessPiece> _pieces;
 	CHESSCOLOR _colorToMove = CHESSCOLOR::WHITE;
 	uint16_t _fullMoves = 1;
 	uint8_t _halfMoves = 0;

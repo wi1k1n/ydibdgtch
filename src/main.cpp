@@ -57,7 +57,7 @@ void loop() {
 			resolver.update(curState - debouncer.getPrev());
 		}
 	}
-	// board.print();
+	board.print();
 
 	// wifiManager.tick();
 	leds.showLEDs(&setLEDColor);

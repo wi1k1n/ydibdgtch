@@ -57,3 +57,7 @@ The following components need to be connected:
 - Showing if in check
 - Showing if checkmated
 - Showing available places for the piece
+
+# TODOs
+- get rid of sets/unordered_sets in favor of vector
+	- or implement more memory-efficient container myself
