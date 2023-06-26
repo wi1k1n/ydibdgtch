@@ -26,12 +26,12 @@ struct SenseBoardState
 		_rows[row] ^= (-static_cast<uint8_t>(val) ^ _rows[row]) & (1u << col);
 	}
 
-	std::unordered_set<ChessPieceLocation> operator-(const SenseBoardState& other) {
-		std::unordered_set<ChessPieceLocation> diffs;
+	std::vector<ChessPieceLocation> operator-(const SenseBoardState& other) {
+		std::vector<ChessPieceLocation> diffs;
 		int64_t bits = reinterpret_cast<int64_t>(_rows) - reinterpret_cast<int64_t>(other._rows);
 		for (uint8_t idx = 0; idx < 64 && bits; ++idx)
 			if (bits & (1 << idx))
-				diffs.insert(ChessPieceLocation(idx));
+				diffs.push_back(ChessPieceLocation(idx));
 		return std::move(diffs);
 	}
 

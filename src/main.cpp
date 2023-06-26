@@ -1,5 +1,6 @@
 // YDIBDGTCHB main code file
 #include "constants.h"
+#include "sdk.h"
 
 #include <Arduino.h>
 
@@ -53,8 +54,10 @@ void loop() {
 	if (mode == ControllerMode::GAME_RUNNING) {
 		board.scan();
 		SenseBoardState curState = board.getState();
-		if (debouncer.tick(curState)) {
-			resolver.update(curState - debouncer.getPrev());
+		if (debouncer.tick(curState)) { // if there was a change
+			ChessGameStatesResolverInfo resolveInfo = resolver.update(curState - debouncer.getPrev());
+			LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
+			LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
 		}
 	}
 	board.print();

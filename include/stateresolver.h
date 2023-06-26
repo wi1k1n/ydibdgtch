@@ -64,8 +64,12 @@ public:
 	const SenseBoardState& getPrev() const { return _prev; }
 };
 
+enum class CGSRInfo {
+
+};
+
 /// @brief A helper class that aggregates game states resolution information
-class ChessGameStatesResolverInfo {
+struct ChessGameStatesResolverInfo {
 
 };
 
@@ -81,9 +85,26 @@ public:
 		return true;
 	}
 
-	void update(const std::vector<ChessPieceLocation>& changes) {
+	const ChessGameStatesResolverInfo& update(const std::vector<ChessPieceLocation>& changes) {
 		// TODO: validate changes for each head
 		// TODO: prune subtree
+	}
+
+	/// @brief Checks if there's an uncertainty in the current gamestate (i.e. if there's a single branch for evaluation)
+	bool IsCurrentStateUnique() const {
+		// TODO: implement
+		return true;
+	}
+
+	/// @brief Checks if current state is invalid and not final in terms of game engine and next turn is necessary to be a valid state
+	/// @note Returns true even even if current state is final but can still be considered as intermediate
+	bool IsCurrentStateIntermediate() const {
+		// TODO: implement
+		return true;
+	}
+
+	bool IsCurrentStateValid() const {
+
 	}
 };
 

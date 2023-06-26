@@ -2,6 +2,7 @@
 #define SDK_H__
 
 #include "constants.h"
+#include "Arduino.h"
 
 #ifdef CUSTOM_UART
 #include "CustomUART.h"
@@ -29,5 +30,10 @@
 #define LOGLN(txt) do {} while(false)
 #define LOG(txt) do {} while(false)
 #endif
+
+// const __FlashStringHelper* operator""_f(const char* str) {
+// 	return F(str);
+// }
+const __FlashStringHelper* operator""_f(const char* str, size_t len);
 
 #endif // SDK_H__
