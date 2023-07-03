@@ -49,13 +49,15 @@ struct hash<SenseBoardState> {
 };
 } // namespace std
 
-class SenseBoard {
+
+class SenseBoardInterface {
+protected:
 	SenseBoardState _state;
 public:
-	SenseBoard() = default;
+	SenseBoardInterface() = default;
 
-	bool init();
-	void scan();
+	virtual bool init() { return true; }
+	virtual void scan();
 
 	const SenseBoardState& getState() const { return _state; }
 	bool getState(uint8_t row, uint8_t col) const;
@@ -64,9 +66,29 @@ public:
 	void setState(uint8_t idx, bool val);
 
 	void print() const;
+};
 
+class SenseBoard : public SenseBoardInterface {
+public:
+	bool init() override;
+	void scan() override;
+private:
 	static bool readPin(uint8_t pin);
 	static void writePin(uint8_t pin, bool val);
+};
+
+/// @brief 
+class SenseBoardSerial : public SenseBoardInterface {
+public:
+	enum class PACKETTYPE {
+		UNKNOWN = 0b10110000,
+		STATE_UPDATE = 0b10110001
+	};
+private:
+	uint8_t _buffer[32];
+public:
+	bool init() override;
+	void scan() override;
 };
 
 #endif // SENSEBOARD_H__

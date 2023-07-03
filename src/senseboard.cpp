@@ -1,5 +1,32 @@
 #include "senseboard.h"
 
+bool SenseBoardInterface::getState(uint8_t row, uint8_t col) const {
+	return _state.get(row, col);
+}
+
+void SenseBoardInterface::setState(uint8_t row, uint8_t col, bool val) {
+	_state.set(row, col, val);
+}
+
+bool SenseBoardInterface::getState(uint8_t idx) const {
+	return getState(idx / 8, idx % 8);
+}
+
+void SenseBoardInterface::setState(uint8_t idx, bool val) {
+	return setState(idx / 8, idx % 8, val);
+}
+
+void SenseBoardInterface::print() const {
+	for (uint8_t i = 0; i < 8; ++i) {
+		for (uint8_t j = 0; j < 8; ++j)
+			Serial.print(getState(i, j));
+		Serial.println();
+	}
+	Serial.println();
+	Serial.println();
+}
+
+//-----------------------------------------------------------------------------------------------------
 bool SenseBoard::init() {
 	for (uint8_t i = 0; i < PINS_INPUT_SIZE; ++i)
 		pinMode(PINS_INPUT[i], INPUT_PULLDOWN);
@@ -27,28 +54,22 @@ void SenseBoard::writePin(uint8_t pin, bool val) {
 	digitalWrite(pin, val ? HIGH : LOW);
 }
 
-bool SenseBoard::getState(uint8_t row, uint8_t col) const {
-	return _state.get(row, col);
+//-----------------------------------------------------------------------------------------------------
+bool SenseBoardSerial::init() {
+	Serial.begin(SERIAL_BAUDRATE);
+	return true;
 }
 
-void SenseBoard::setState(uint8_t row, uint8_t col, bool val) {
-	_state.set(row, col, val);
-}
-
-bool SenseBoard::getState(uint8_t idx) const {
-	return getState(idx / 8, idx % 8);
-}
-
-void SenseBoard::setState(uint8_t idx, bool val) {
-	return setState(idx / 8, idx % 8, val);
-}
-
-void SenseBoard::print() const {
-	for (uint8_t i = 0; i < 8; ++i) {
-		for (uint8_t j = 0; j < 8; ++j)
-			Serial.print(getState(i, j));
-		Serial.println();
+void SenseBoardSerial::scan() {
+	while (Serial.available()) {
+		PACKETTYPE type = static_cast<PACKETTYPE>(Serial.read());
+		if (type == PACKETTYPE::STATE_UPDATE) {
+			int count = Serial.readBytes(_buffer, 8);
+			if (count < 8) {
+				Serial.flush();
+				return;
+			}
+			memcpy(_state._rows, _buffer, 8);
+		}
 	}
-	Serial.println();
-	Serial.println();
 }
