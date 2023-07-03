@@ -16,7 +16,8 @@ enum class ControllerMode {
 	GAME_PAUSED
 }; 
 
-SenseBoard board;
+// SenseBoard board;
+SenseBoardSerial board;
 LEDMatrix leds;
 // WiFiManager wifiManager;
 
@@ -55,12 +56,12 @@ void loop() {
 		board.scan();
 		SenseBoardState curState = board.getState();
 		if (debouncer.tick(curState)) { // if there was a change
+			board.print();
 			GSResolverInfo resolveInfo = resolver.update(curState - debouncer.getPrev());
 			// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
 			// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
 		}
 	}
-	board.print();
 
 	// wifiManager.tick();
 	leds.showLEDs(&setLEDColor);

@@ -1,5 +1,7 @@
 const BAUD_RATE = 115200
 
+const PACKETTYPE__STATE_UPDATE = 0b10110001;
+
 ///////////////////////////////////////////////////////////////////////////
 
 const SQUARE_COLOR_INACTIVE = 'rgb(231, 231, 231)';
@@ -14,35 +16,57 @@ const SQUARE_MARGIN = 1;
 if ("serial" in navigator === false)
 	alert("SerialPort isn't supported!!!");
 
+var port = null;
+var writer = null;
 document.querySelector('#btnConnect').addEventListener('click', async () => {
-	const filters = [{usbVendorId: 0x1a86, usbProductId: 0x7523}];
-	// const filters = [];
+	// const filters = [{usbVendorId: 0x1a86, usbProductId: 0x7523}];
+	const filters = [];
 	const port = await navigator.serial.requestPort({filters});
 	if (!port)
 		return;
 	await port.open({baudRate: BAUD_RATE});
 	console.log('opened');
 
+	writer = port.writable.getWriter();
+
 	while (port.readable) {
 		const reader = port.readable.getReader();
 		try {
-		  while (true) {
-			const { value, done } = await reader.read();
-			if (done) {
-			  // Allow the serial port to be closed later.
-			  reader.releaseLock();
-			  break;
+			while (true) {
+				const { value, done } = await reader.read();
+				if (done) {
+					// Allow the serial port to be closed later.
+					reader.releaseLock();
+					break;
+				}
+				if (value) {
+					// console.log('received: ', (new TextDecoder()).decode(value));
+				}
 			}
-			if (value) {
-			  console.log(value);
-			}
-		  }
 		} catch (error) {
-		  // TODO: Handle non-fatal read error.
-		  console.log(error);
+			// TODO: Handle non-fatal read error.
+			console.log(error);
 		}
-	  }
+	}
 });
+
+async function sendBoardUpdate() {
+	if (writer === null)
+		return;
+	
+	let data = new Uint8Array(9);
+	data[0] = PACKETTYPE__STATE_UPDATE;
+	for (let row = 0; row < 8; ++row) {
+		let curByte = squares[row * 8].state;
+		for (let col = 1; col < 8; ++col)
+			curByte = (curByte << 1) | squares[row * 8 + col].state;
+		data[row + 1] = curByte;
+	}
+	// console.log('sending: ', data);
+
+	await writer.write(data);
+	// writer.releaseLock();
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -81,15 +105,30 @@ for (let i = 0; i < 64; ++i) {
 	rect.updateFill();
 
 
-	rect.on('pointerover', function() {
+	rect.on('mouseenter', function(evt) {
+		// console.log(evt.evt);
         this.stroke('black');
         this.strokeWidth(2);
+		if (evt.evt.buttons === 1) {
+			if (evt.evt.ctrlKey)
+				this.stateSet(1);
+			else if (evt.evt.shiftKey)
+				this.stateSet(0);
+			else
+				this.stateToggle();
+			sendBoardUpdate();
+		} else if (evt.evt.buttons === 2) {
+			this.stateSet(0);
+			sendBoardUpdate();
+		}
 	});
-	rect.on('pointerout', function() {
+	rect.on('mouseleave', function() {
         this.strokeWidth(0);
 	});
-	rect.on('pointerclick', function() {
+	rect.on('click', function(evt) {
+		console.log(evt);
 		this.stateToggle();
+		sendBoardUpdate();
 	});
 
 	squares.push(rect);

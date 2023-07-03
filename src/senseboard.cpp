@@ -63,6 +63,8 @@ bool SenseBoardSerial::init() {
 void SenseBoardSerial::scan() {
 	while (Serial.available()) {
 		PACKETTYPE type = static_cast<PACKETTYPE>(Serial.read());
+		// LOG("Packet type: "_f);
+		// LOGLN(static_cast<int>(type));
 		if (type == PACKETTYPE::STATE_UPDATE) {
 			int count = Serial.readBytes(_buffer, 8);
 			if (count < 8) {
@@ -70,6 +72,7 @@ void SenseBoardSerial::scan() {
 				return;
 			}
 			memcpy(_state._rows, _buffer, 8);
+			// LOGLN(*reinterpret_cast<int64_t*>(_buffer));
 		}
 	}
 }
