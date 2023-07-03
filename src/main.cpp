@@ -25,7 +25,7 @@ PushButton btn;
 ControllerMode mode = ControllerMode::GAME_PAUSED;
 ClassicChessRules engine;
 SenseBoardStateDebouncer debouncer;
-ChessGameStatesResolver resolver;
+GSResolver resolver;
 
 void setup() {
 #ifdef _DEBUG_
@@ -38,7 +38,7 @@ void setup() {
 	// if (!btn.init(PIN_PUSHBUTTON1))
 	// 	return;
 	if (!board.init()) return;
-	if (!resolver.init(engine)) return;
+	if (!resolver.init(engine, engine.getStartingState())) return;
 	if (!leds.init()) return;
 	// wifiManager.init();
 
@@ -55,9 +55,9 @@ void loop() {
 		board.scan();
 		SenseBoardState curState = board.getState();
 		if (debouncer.tick(curState)) { // if there was a change
-			ChessGameStatesResolverInfo resolveInfo = resolver.update(curState - debouncer.getPrev());
-			LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
-			LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
+			GSResolverInfo resolveInfo = resolver.update(curState - debouncer.getPrev());
+			// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
+			// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
 		}
 	}
 	board.print();
