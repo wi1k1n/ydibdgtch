@@ -1,15 +1,23 @@
 const BAUD_RATE = 115200;
-const SERIAL_READ_WAIT_TIMEOUT = 1; // ms
+const SERIAL_READ_WAIT_TIMEOUT = 10; // ms
 const PACKETTYPE__STATE_UPDATE = 0b10110001;
 
 ///////////////////////////////////////////////////////////////////////////
+
+const BOARD_ROTATE180 = true;
+const BOARD_FLIPX = true;
+
+const SQUARE_MARGIN = 1;
 
 const SQUARE_COLOR_INACTIVE = 'rgb(231, 231, 231)';
 const SQUARE_COLOR_HOVER = 'rgb(196, 255, 191)';
 const SQUARE_COLOR_CLICKED = 'rgb(255, 234, 118)';
 
-const SQUARE_MARGIN = 1;
+////////////////////////////////////////////////////////////////////////////
 
+function fenReceived(fen) {
+	board.position(fen);	
+}
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +52,9 @@ document.querySelector('#btnConnect').addEventListener('click', async () => {
 					received = tArr;
 					clearTimeout(timeoutId);
 					timeoutId = setTimeout(() => {
-						console.log(new TextDecoder().decode(received));
+						const receivedStr = new TextDecoder().decode(received);
+						console.log(receivedStr);
+						fenReceived(receivedStr);
 						received = new Uint8Array(); // not thread safe, but would work for now
 					}, SERIAL_READ_WAIT_TIMEOUT);
 				}
@@ -65,8 +75,8 @@ async function sendBoardUpdate() {
 	let data = new Uint8Array(9);
 	data[0] = PACKETTYPE__STATE_UPDATE;
 	for (let row = 0; row < 8; ++row) {
-		let curByte = squares[row * 8].state;
-		for (let col = 1; col < 8; ++col)
+		let curByte = squares[row * 8 + 7].state;
+		for (let col = 6; col >= 0; --col)
 			curByte = (curByte << 1) | squares[row * 8 + col].state;
 		data[row + 1] = curByte;
 	}
@@ -84,11 +94,12 @@ let squares = [];
 
 let stage = new Konva.Stage({
 	container: 'controlPanel',
-	width: 800,
-	height: 800,
-	rotation: 180,
-	x: 800,
-	y: 800,
+	width: BOARDSIZE,
+	height: BOARDSIZE,
+	rotation: BOARD_ROTATE180 ? 180 : 0,
+	x: BOARD_ROTATE180 != BOARD_FLIPX ? BOARDSIZE : 0,
+	y: BOARD_ROTATE180 ? BOARDSIZE : 0,
+	scaleX: BOARD_FLIPX ? -1 : 1
   });
   squareWidth = (stage.width() - 10) / 8;
   squareHeight = (stage.height() - 10) / 8;
@@ -98,7 +109,8 @@ let layer = new Konva.Layer();
 for (let i = 0; i < 64; ++i) {
 	let rect = new Konva.Rect({
 	  x: (i % 8) * (squareWidth + SQUARE_MARGIN) + SQUARE_MARGIN, y: Math.floor(i / 8) * (squareHeight + SQUARE_MARGIN) + SQUARE_MARGIN,
-	  width: squareWidth, height: squareHeight
+	  width: squareWidth, height: squareHeight,
+	  name: i
 	});
 
 	rect.stateToggle = function() {
@@ -132,6 +144,7 @@ for (let i = 0; i < 64; ++i) {
 			this.stateSet(0);
 			sendBoardUpdate();
 		}
+		// console.log(evt.target.name());
 	});
 	rect.on('mouseleave', function() {
         this.strokeWidth(0);

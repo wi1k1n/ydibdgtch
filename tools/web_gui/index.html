@@ -30,7 +30,7 @@ crossorigin="anonymous">
         <div id="controlPanel"></div>
       </div>
       <div class="float-child">
-        <div id="myBoard" style="width: 800px"></div>
+        <div id="myBoard"></div>
       </div>
     </div>
 
@@ -43,6 +43,10 @@ crossorigin="anonymous">
       <script type="text/javascript">
             // NOTE: this example uses the chess.js library:
             // https://github.com/jhlywa/chess.js
+
+            const BOARDSIZE = 750;
+
+            document.getElementById('myBoard').setAttribute('style', 'width:'+BOARDSIZE+'px');
 
             var board = null
             var game = new Chess()
@@ -90,7 +94,8 @@ crossorigin="anonymous">
 
             var config = {
               draggable: false,
-              position: 'start',
+              // position: 'start',
+              position: {},
               onDragStart: onDragStart,
               onDrop: onDrop,
               onSnapEnd: onSnapEnd

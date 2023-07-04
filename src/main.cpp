@@ -56,11 +56,11 @@ void loop() {
 		board.scan();
 		SenseBoardState curState = board.getState();
 		if (debouncer.tick(curState)) { // if there was a change
-			board.print();
+			// board.print();
 			GSResolverInfo resolveInfo = resolver.update(curState - debouncer.getPrev());
-			DLOGLN(resolveInfo.isFinished);
+			// DLOGLN(resolveInfo.isFinished);
 			if (resolveInfo.isFinished) {
-				LOGLN(resolver.getGameState().toString());
+				LOG(resolver.getGameState().toFEN());
 			}
 			// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
 			// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());

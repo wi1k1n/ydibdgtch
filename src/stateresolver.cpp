@@ -15,11 +15,11 @@ uint8_t GSTree::getBranchCount() const {
 }
 
 const GSBranch* GSTree::getBranch(uint8_t idx) const {
-	DLOGLN(idx);
+	// DLOGLN(idx);
 	if (idx >= _branches.size())
 		return nullptr;
 	const GSBranch& b = _branches[idx];
-	DLOGLN(b.toString());
+	// DLOGLN(b.toString());
 	return &_branches[idx];
 }
 
