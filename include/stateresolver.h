@@ -11,56 +11,28 @@
 // ------ Data structure ------
 // ------------------------------------------------------------------------------------
 
-#if 0 // could be useful
-/// @brief Node in a Tree data structure
-/// @tparam T Payload type
-template<typename T>
-class Node
-{
-	T _payload;
-	Node<T>* _parent = nullptr; // weak reference -> doesn't own the object
-public:
-	Node(const T& pl, Node<T>* parent) : _payload(pl), _parent(parent) { }
-	const T& getValue() const { return _payload; }
-	T& getValue() { return _payload; }
-
-	Node* getParent() { return _parent; }
-};
-
-/// @brief A strange backward-tree, that has multiple heads (leaves) pointing to its parents
-/// @tparam T Payload type
-template<typename T>
-class Tree
-{
-	std::list<Node<T>> _nodes;
-	std::vector<Node<T>*> _heads;
-public:
-	Tree() = default;
-};
-#endif
-
-/// @brief GameStateBranch
-class GSBranch {
-
-};
+class GSBranch;
 
 /// @brief GameStateTree. Main game states container interface
 class GSTree {
 	ChessGameState _initState;
+	std::vector<GSBranch> _branches;
 public:
-	bool init(const ChessGameState& initState) {
-		_initState = initState;
-		return true;
-	}
+	bool init(const ChessGameState& initState);
 
+	const ChessGameState& getInitialState() const;
+	uint8_t getBranchCount() const;
+	const GSBranch* getBranch(uint8_t idx) const;
+};
 
-	GSBranch* getBranch(uint8_t idx) {
-		return nullptr;
-	}
-
-	uint8_t getBranchCount() const {
-		return 1;
-	}
+/// @brief GameStateBranch
+class GSBranch {
+	GSTree* _parentTree = nullptr;
+	std::vector<ChessPieceLocation> _moves;
+public:
+	GSBranch(GSTree* parent);
+	ChessGameState evaluateGameState() const;
+	String toString() const;
 };
 
 // ------------------------------------------------------------------------------------
@@ -116,7 +88,7 @@ public:
 		// TODO: validate changes for each head
 		uint8_t branchCount = _tree.getBranchCount();
 		for (uint8_t i = 0;; ++i) {
-			GSBranch* branch = _tree.getBranch(i);
+			const GSBranch* branch = _tree.getBranch(i);
 			if (!branch)
 				break;
 		}
@@ -140,6 +112,13 @@ public:
 	// bool IsCurrentStateValid() const {
 
 	// }
+
+	ChessGameState getGameState(uint8_t idx = 0) const {
+		const GSBranch* branch = _tree.getBranch(idx);
+		if (!branch)
+			return ChessGameState::getUndefinedState();
+		return branch->evaluateGameState();
+	}
 };
 
 #endif // STATERESOLVER_H__

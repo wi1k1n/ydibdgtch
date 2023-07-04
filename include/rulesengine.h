@@ -133,6 +133,9 @@ public:
 	ChessGameState(const ChessGameState& other);
 	ChessGameState(const String& fenString);
 
+	/// @brief Create a game state that is intentionally in the undefined/invalid state
+	static ChessGameState getUndefinedState() { return ChessGameState(CHESSINITIALSTATE::UNKNOWN, CHESSCOLOR::UNKNOWN); }
+
 	ChessPiece at(const ChessPieceLocation& location) const;
 	ChessPiece at(uint8_t row, uint8_t col) const;
 	ChessPiece at(const String& s) const; // only lower case!
@@ -154,6 +157,8 @@ public:
 	uint8_t getHalfMoves() const { return _halfMoves; }
 	
 	bool isLocationOccupied(const ChessPieceLocation& location) const;
+
+	bool isUndefined() const { return _colorToMove == CHESSCOLOR::UNKNOWN; } // TODO: more explicit way of undefined state?
 	
 	String toString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
 	String toFEN() const;
