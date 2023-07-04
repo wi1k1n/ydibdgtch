@@ -1,5 +1,5 @@
-const BAUD_RATE = 115200
-
+const BAUD_RATE = 115200;
+const SERIAL_READ_WAIT_TIMEOUT = 1; // ms
 const PACKETTYPE__STATE_UPDATE = 0b10110001;
 
 ///////////////////////////////////////////////////////////////////////////
@@ -17,40 +17,48 @@ if ("serial" in navigator === false)
 	alert("SerialPort isn't supported!!!");
 
 var port = null;
-var writer = null;
 document.querySelector('#btnConnect').addEventListener('click', async () => {
 	// const filters = [{usbVendorId: 0x1a86, usbProductId: 0x7523}];
 	const filters = [];
-	const port = await navigator.serial.requestPort({filters});
-	if (!port)
+	port = await navigator.serial.requestPort({filters});
+	if (!port) {
+		consolge.log("couldn't request ports!");
 		return;
+	}
 	await port.open({baudRate: BAUD_RATE});
-	console.log('opened');
-
-	writer = port.writable.getWriter();
+	console.log('Serial port opened: ', port.getInfo());
 
 	while (port.readable) {
 		const reader = port.readable.getReader();
 		try {
+			let received = new Uint8Array();
+			let timeoutId = 0;
 			while (true) {
 				const { value, done } = await reader.read();
-				if (done) {
-					// Allow the serial port to be closed later.
-					reader.releaseLock();
+				if (done)
 					break;
-				}
 				if (value) {
-					// console.log('received: ', (new TextDecoder()).decode(value));
+					const tArr = new Uint8Array(received.length + value.length);
+					tArr.set(received);
+					tArr.set(value, received.length);
+					received = tArr;
+					clearTimeout(timeoutId);
+					timeoutId = setTimeout(() => {
+						console.log(new TextDecoder().decode(received));
+						received = new Uint8Array(); // not thread safe, but would work for now
+					}, SERIAL_READ_WAIT_TIMEOUT);
 				}
 			}
 		} catch (error) {
-			// TODO: Handle non-fatal read error.
-			console.log(error);
+			console.error(error);
+		} finally {
+			reader.releaseLock();
 		}
 	}
 });
 
 async function sendBoardUpdate() {
+	const writer = port.writable.getWriter();
 	if (writer === null)
 		return;
 	
@@ -65,7 +73,7 @@ async function sendBoardUpdate() {
 	// console.log('sending: ', data);
 
 	await writer.write(data);
-	// writer.releaseLock();
+	writer.releaseLock();
 }
 
 
@@ -78,6 +86,9 @@ let stage = new Konva.Stage({
 	container: 'controlPanel',
 	width: 800,
 	height: 800,
+	rotation: 180,
+	x: 800,
+	y: 800,
   });
   squareWidth = (stage.width() - 10) / 8;
   squareHeight = (stage.height() - 10) / 8;
@@ -126,7 +137,7 @@ for (let i = 0; i < 64; ++i) {
         this.strokeWidth(0);
 	});
 	rect.on('click', function(evt) {
-		console.log(evt);
+		// console.log(evt);
 		this.stateToggle();
 		sendBoardUpdate();
 	});

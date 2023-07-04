@@ -16,8 +16,8 @@ enum class ControllerMode {
 	GAME_PAUSED
 }; 
 
-SenseBoard board;
-// SenseBoardSerial board;
+// SenseBoard board;
+SenseBoardSerial board;
 LEDMatrix leds;
 // WiFiManager wifiManager;
 
