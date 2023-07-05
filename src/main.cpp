@@ -31,6 +31,7 @@ GSResolver resolver;
 void setup() {
 #ifdef _DEBUG_
 	Serial.begin(SERIAL_BAUDRATE);
+	delay(100);
 #endif
 	Serial.println();
 	Serial.print(F("Chess rules engine: "));
@@ -39,9 +40,19 @@ void setup() {
 	// if (!btn.init(PIN_PUSHBUTTON1))
 	// 	return;
 	if (!board.init()) return;
+	if (!debouncer.init(board.getState())) return;
 	if (!resolver.init(engine, engine.getStartingState())) return;
+
 	if (!leds.init()) return;
 	// wifiManager.init();
+
+#ifdef _DEBUG_
+	delay(20); // small delay to make sure webgui receives starting fen as a separate package
+	LOG(engine.getStartingState().toFEN());
+	delay(20);
+	LOG(engine.getStartingState().toFEN());
+	delay(20);
+#endif
 
 	mode = ControllerMode::GAME_RUNNING;
 }
@@ -54,13 +65,18 @@ CellCRGB setLEDColor(uint8_t idx) {
 void loop() {
 	if (mode == ControllerMode::GAME_RUNNING) {
 		board.scan();
-		SenseBoardState curState = board.getState();
-		if (debouncer.tick(curState)) { // if there was a change
+		if (debouncer.tick(board.getState())) { // if there was a change
 			// board.print();
-			GSResolverInfo resolveInfo = resolver.update(curState - debouncer.getPrev());
-			// DLOGLN(resolveInfo.isFinished);
+			GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
 			if (resolveInfo.isFinished) {
-				LOG(resolver.getGameState().toFEN());
+				ChessGameState state = resolver.getGameState();
+				if (state.isUndefined()) {
+					DLOGLN("Got Undefined game state!");
+				} else {
+					delay(100);
+					LOG(state.toFEN());
+					delay(100);
+				}
 			}
 			// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
 			// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
@@ -70,5 +86,5 @@ void loop() {
 	// wifiManager.tick();
 	leds.showLEDs(&setLEDColor);
 
-	delay(50);
+	delay(50); // TODO: timer instead, please!
 }

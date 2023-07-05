@@ -57,6 +57,11 @@ void SenseBoard::writePin(uint8_t pin, bool val) {
 //-----------------------------------------------------------------------------------------------------
 bool SenseBoardSerial::init() {
 	Serial.begin(SERIAL_BAUDRATE);
+	// Set starting position
+	_state._rows[0] = 0xff;
+	_state._rows[1] = 0xff;
+	_state._rows[6] = 0xff;
+	_state._rows[7] = 0xff;
 	return true;
 }
 

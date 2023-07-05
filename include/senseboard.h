@@ -26,12 +26,29 @@ struct SenseBoardState
 		_rows[row] ^= (-static_cast<uint8_t>(val) ^ _rows[row]) & (1u << col);
 	}
 
-	std::vector<ChessPieceLocation> operator-(const SenseBoardState& other) {
+	std::vector<ChessPieceLocation> operator-(const SenseBoardState& other) const {
 		std::vector<ChessPieceLocation> diffs;
-		int64_t bits = reinterpret_cast<int64_t>(_rows) - reinterpret_cast<int64_t>(other._rows);
-		for (uint8_t idx = 0; idx < 64 && bits; ++idx)
-			if (bits & (1 << idx))
-				diffs.push_back(ChessPieceLocation(idx));
+		// // Serial.println(reinterpret_cast<uint64_t>(_rows), BIN);
+		// // Serial.println(reinterpret_cast<uint64_t>(other._rows), BIN);
+		// int64_t bits = reinterpret_cast<uint64_t>(_rows) ^ reinterpret_cast<uint64_t>(other._rows);
+		// // Serial.println(bits, BIN);
+		// for (uint8_t idx = 0; idx < 64 && bits; ++idx)
+		// 	if (bits & (1 << idx))
+		// 		diffs.push_back(ChessPieceLocation(idx));
+		for (uint8_t rowIdx = 0; rowIdx < 8; ++rowIdx) {
+			Serial.print(_rows[rowIdx], BIN); Serial.print(" ");
+			Serial.print(other._rows[rowIdx], BIN); Serial.print(" ");
+			uint8_t rowDiff = _rows[rowIdx] ^ other._rows[rowIdx];
+			Serial.println(rowDiff, BIN);
+			for (uint8_t bitIdx = 0; bitIdx < 8 && rowDiff; ++bitIdx)
+				if (rowDiff & (1 << bitIdx))
+					diffs.push_back(ChessPieceLocation(rowIdx * 8 + bitIdx));
+		}
+		for (const auto& diff : diffs) {
+			LOG(diff.toString());
+			LOG(" "_f);
+		}
+		LOGLN();
 		return std::move(diffs);
 	}
 

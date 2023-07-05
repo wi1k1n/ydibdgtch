@@ -400,6 +400,18 @@ void ChessGameState::unset(const String& location) {
 	set(location, ChessPiece());
 }
 
+bool ChessGameState::makeMove(const ChessMove& move) {
+	// TODO: this implementation is not tested!
+	if (move.first == move.second)
+		return true;
+	ChessPiece from = at(move.first);
+	if (!from.isValid())
+		return false;
+	set(move.second, from);
+	unset(move.first);
+	return true;
+}
+
 ChessPieceLocation ChessGameState::findFirst(CHESSPIECE piece, CHESSCOLOR color) const {
 	for (const auto& entry : _pieces)
 		if (entry.second.getPiece() == piece && entry.second.getColor() == color)

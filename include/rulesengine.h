@@ -116,6 +116,8 @@ struct hash<CHESSPIECE> {
 };
 } // namespace std
 
+typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
+
 class ChessGameState {
 	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces; // TODO: convert into std::vector<ChessPiece> _pieces;
 	CHESSCOLOR _colorToMove = CHESSCOLOR::WHITE;
@@ -147,6 +149,8 @@ public:
 	void unset(uint8_t row, uint8_t col);
 	void unset(const String& location);
 
+	bool makeMove(const ChessMove& move);
+
 	ChessPieceLocation findFirst(CHESSPIECE piece, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
 	ChessPieceLocation findFirst(const ChessPiece& piece) const;
 
@@ -165,7 +169,6 @@ public:
 	bool operator==(const ChessGameState& other) const { return _pieces == other._pieces; }
 };
 
-typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
 typedef std::pair<ChessGameState, ChessMove> ChessTurn;
 
 class ChessRulesEngine {
