@@ -24,6 +24,10 @@ public:
 	LEDMatrix() = default;
 	bool init();
 
+	// void clear();
+	// void setAt(const CellCRGB& clr);
+
+	// memory efficient way to set leds, but sometimes inconvenient
 	void showLEDs(std::function<CellCRGB(uint8_t)> check);
 };
 

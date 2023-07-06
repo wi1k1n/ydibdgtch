@@ -99,6 +99,7 @@ bool GSResolver::init(const ChessRulesEngine& rules, const ChessGameState& initS
 	return true;
 }
 
+// TODO: do some caching here!
 ChessGameState GSResolver::getGameState(uint8_t idx) const {
 	const GSBranch* branch = _tree.getBranch(idx);
 	if (!branch)

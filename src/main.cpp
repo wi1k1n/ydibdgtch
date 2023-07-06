@@ -29,6 +29,9 @@ class Application {
 	ClassicChessRules engine;
 	SenseBoardStateDebouncer debouncer;
 	GSResolver resolver;
+
+	
+	ChessGameState currentResolvedState; // TODO: do caching in the GSResolver instead!
 public:
 	bool init();
 	bool tick();
@@ -86,7 +89,6 @@ bool Application::tick() {
 	if (tmrBoardScan.tick())
 		board.scan();
 
-	ChessGameState currentResolvedState;
 	if (debouncer.tick(board.getState())) { // if there was a change
 		board.print();
 		GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
