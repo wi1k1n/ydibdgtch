@@ -52,7 +52,8 @@ document.querySelector('#btnConnect').addEventListener('click', async () => {
 					received = tArr;
 					clearTimeout(timeoutId);
 					timeoutId = setTimeout(() => {
-						const receivedStr = new TextDecoder().decode(received);
+						// console.log(received);
+						const receivedStr = new TextDecoder().decode(received).trim();
 						console.log(receivedStr);
 						fenReceived(receivedStr);
 						received = new Uint8Array(); // not thread safe, but would work for now

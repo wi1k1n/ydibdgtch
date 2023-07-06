@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 
+#include <TimerMs.h>
+
 #include "interfaces/serial.h"
 #include "senseboard.h"
 #include "ledmatrix.h"
@@ -14,12 +16,15 @@
 
 class Application {
 	CommunicationProtocol<SerialCommunication> comm;
+
 	// SenseBoardHardware board;
 	SenseBoardWebGUI board;
 	LEDMatrix leds;
+	PushButton btn;
 	// WiFiManager wifiManager;
 
-	PushButton btn;
+	TimerMs tmrBoardScan { 50, 1, 0 };
+	TimerMs tmrLedsUpdate { 50, 1, 0 };
 
 	ClassicChessRules engine;
 	SenseBoardStateDebouncer debouncer;
@@ -51,7 +56,10 @@ bool Application::init() {
 		return false;
 	if (!debouncer.init(board.getState())) 
 		return false;
-	if (!resolver.init(engine, engine.getStartingState())) 
+	
+	// ChessGameState initialGameState("k1K5/8/8/6p1/2b5/3n4/1N6/8 w - - 0 1"_f);
+	ChessGameState initialGameState(engine.getStartingState());
+	if (!resolver.init(engine, initialGameState)) 
 		return false;
 
 	if (!leds.init()) 
@@ -60,28 +68,36 @@ bool Application::init() {
 
 #ifdef _DEBUG_
 	{
-		String fen = engine.getStartingState().toFEN();
-		// LOG(fen);
-		comm.send(fen);
+		// String fen = engine.getStartingState().toFEN();
+		LOGLN(initialGameState.toFEN());
+		LOG(initialGameState.toString());
+		// comm.send(fen);
 	}
 #endif
+	
 	return true;
 }
 
 bool Application::tick() {
-	if (comm.tick()) {
+	// if (comm.tick()) {
 
-	}
-	board.scan();
+	// }
+	
+	if (tmrBoardScan.tick())
+		board.scan();
+
+	ChessGameState currentResolvedState;
 	if (debouncer.tick(board.getState())) { // if there was a change
-		// board.print();
+		board.print();
 		GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
-		LOGLN(resolveInfo.toString());
-		ChessGameState state = resolver.getGameState();
-		if (state.isUndefined()) {
+		// LOGLN(resolveInfo.toString());
+		currentResolvedState = resolver.getGameState();
+		if (currentResolvedState.isUndefined()) {
 			DLOGLN("Got Undefined game state!");
 		} else {
-			comm.send(state.toFEN());
+			// comm.send(currentResolvedState.toFEN());
+			LOGLN(currentResolvedState.toFEN());
+			LOGLN(currentResolvedState.toString());
 		}
 		// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
 		// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
@@ -89,12 +105,17 @@ bool Application::tick() {
 
 	// wifiManager.tick();
 	std::function<CellCRGB(uint8_t)> setLEDColor = [&](uint8_t idx) {
-		bool val = board.getState(idx);
-		return val ? CellCRGB(0xFFFFFF) : CellCRGB(0x0);
+		CRGB clr;
+		uint8_t b = board.getState(idx) ? 255 : 0;
+		CHESSCOLOR pieceColor = currentResolvedState.at(idx).getColor();
+		uint8_t r = pieceColor == CHESSCOLOR::BLACK ? 255 : 0;
+		uint8_t g = pieceColor == CHESSCOLOR::WHITE ? 255 : 0;
+		clr.setRGB(r, g, b);
+		return CellCRGB(clr);
 	};
-	leds.showLEDs(setLEDColor);
-
-	delay(50); // TODO: timer instead, please!
+	if (tmrLedsUpdate.tick()) {
+		leds.showLEDs(setLEDColor);
+	}
 }
 
 Application app;

@@ -140,6 +140,7 @@ public:
 
 	ChessPiece at(const ChessPieceLocation& location) const;
 	ChessPiece at(uint8_t row, uint8_t col) const;
+	ChessPiece at(uint8_t idx) const;
 	ChessPiece at(const String& s) const; // only lower case!
 	void set(const ChessPieceLocation& location, const ChessPiece& piece);
 	void set(uint8_t row, uint8_t col, const ChessPiece& piece);

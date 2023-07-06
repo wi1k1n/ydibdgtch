@@ -368,6 +368,9 @@ ChessPiece ChessGameState::at(const ChessPieceLocation& location) const {
 ChessPiece ChessGameState::at(uint8_t row, uint8_t col) const {
 	return at(ChessPieceLocation{ row, col });
 }
+ChessPiece ChessGameState::at(uint8_t idx) const {
+	return at(idx / 8, idx % 8);
+}
 ChessPiece ChessGameState::at(const String& s) const {
 	return at(ChessPieceLocation(s));
 }
