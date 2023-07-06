@@ -102,6 +102,20 @@ struct GSResolverInfo {
 	GSResolverInfo(bool invalid, bool intermediate, bool finished)
 	 : isInvalid(invalid), isIntermediate(intermediate), isFinished(finished)
 	{}
+
+	String toString() const {
+		String res("{"_f);
+		if (!isInvalid)
+			res += "!"_f;
+		res += "invalid "_f;
+		if (!isIntermediate)
+			res += "!"_f;
+		res += "intermediate "_f;
+		if (!isFinished)
+			res += "!"_f;
+		res += "finished}"_f;
+		return res;
+	}
 };
 
 class GSResolver {

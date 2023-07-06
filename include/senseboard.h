@@ -28,27 +28,12 @@ struct SenseBoardState
 
 	std::vector<ChessPieceLocation> operator-(const SenseBoardState& other) const {
 		std::vector<ChessPieceLocation> diffs;
-		// // Serial.println(reinterpret_cast<uint64_t>(_rows), BIN);
-		// // Serial.println(reinterpret_cast<uint64_t>(other._rows), BIN);
-		// int64_t bits = reinterpret_cast<uint64_t>(_rows) ^ reinterpret_cast<uint64_t>(other._rows);
-		// // Serial.println(bits, BIN);
-		// for (uint8_t idx = 0; idx < 64 && bits; ++idx)
-		// 	if (bits & (1 << idx))
-		// 		diffs.push_back(ChessPieceLocation(idx));
 		for (uint8_t rowIdx = 0; rowIdx < 8; ++rowIdx) {
-			Serial.print(_rows[rowIdx], BIN); Serial.print(" ");
-			Serial.print(other._rows[rowIdx], BIN); Serial.print(" ");
 			uint8_t rowDiff = _rows[rowIdx] ^ other._rows[rowIdx];
-			Serial.println(rowDiff, BIN);
 			for (uint8_t bitIdx = 0; bitIdx < 8 && rowDiff; ++bitIdx)
 				if (rowDiff & (1 << bitIdx))
 					diffs.push_back(ChessPieceLocation(rowIdx * 8 + bitIdx));
 		}
-		for (const auto& diff : diffs) {
-			LOG(diff.toString());
-			LOG(" "_f);
-		}
-		LOGLN();
 		return std::move(diffs);
 	}
 
@@ -85,7 +70,7 @@ public:
 	void print() const;
 };
 
-class SenseBoard : public SenseBoardInterface {
+class SenseBoardHardware : public SenseBoardInterface {
 public:
 	bool init() override;
 	void scan() override;
@@ -94,8 +79,8 @@ private:
 	static void writePin(uint8_t pin, bool val);
 };
 
-/// @brief 
-class SenseBoardSerial : public SenseBoardInterface {
+/// @brief Most
+class SenseBoardWebGUI : public SenseBoardInterface {
 public:
 	enum class PACKETTYPE {
 		UNKNOWN = 0b10110000,

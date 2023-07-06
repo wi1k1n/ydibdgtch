@@ -6,9 +6,14 @@
 #include "secret.h"
 
 #define _DEBUG_ 1
-#define _CHRULESDBG_ 1
-#define SERIAL_BAUDRATE 115200
+#define _CHRULESDBG_ 1 // TODO: ??? do I still need this?
 
+// Interfaces
+#define SERIAL_BAUDRATE 115200
+#define COMMUNICATIONPROTOCOL_VERSION 1
+#define COMMUNICATIONPROTOCOL_BUFFERSIZE 128
+
+// Hardware
 #define PIN_LEDS 			GPIO_NUM_4
 #define PIN_PUSHBUTTON1		GPIO_NUM_21
 

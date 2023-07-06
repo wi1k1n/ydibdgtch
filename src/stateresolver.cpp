@@ -107,7 +107,7 @@ ChessGameState GSResolver::getGameState(uint8_t idx) const {
 }
 
 const GSResolverInfo& GSResolver::update(const std::vector<ChessPieceLocation>& changes) {
-	DLOGLN("update()"_f);
+	// DLOGLN("update()"_f);
 	if (changes.empty())
 		return _info;
 	
@@ -118,29 +118,29 @@ const GSResolverInfo& GSResolver::update(const std::vector<ChessPieceLocation>& 
 	// 		break;
 	// }
 	
-	DLOGLN(changes.size());
+	// DLOGLN(changes.size());
 	// TODO: Start with an atomic changes
 	if (changes.size() > 1)
 		return invalidateInfo();
 
 	ChessPieceLocation pos = changes.at(0);
-	DLOGLN(pos.toString());
+	// DLOGLN(pos.toString());
 
 	// TODO: Start with a single branch scenario
 	GSBranch* branch = _tree.getBranch(0);
 	if (!branch)
 		return invalidateInfo();
-	DLOGLN(branch->toString());
+	// DLOGLN(branch->toString());
 	
 	ChessGameState state = getGameState(0);
-	DLOGLN(state.toFEN());
+	// DLOGLN(state.toFEN());
 	if (state.isUndefined())
 		return invalidateInfo();
 	
 	ChessPiece piece = state.at(pos);
-	LOG(piece.toString());
-	LOG(" at "_f);
-	LOGLN(pos.toString());
+	// LOG(piece.toString());
+	// LOG(" at "_f);
+	// LOGLN(pos.toString());
 	if (piece.isValid()) { // piece disappeared from the board
 		branch->disappeared(pos);
 		_info = {1, 1, 0}; // TODO: check for right color to move!

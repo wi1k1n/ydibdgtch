@@ -27,7 +27,7 @@ void SenseBoardInterface::print() const {
 }
 
 //-----------------------------------------------------------------------------------------------------
-bool SenseBoard::init() {
+bool SenseBoardHardware::init() {
 	for (uint8_t i = 0; i < PINS_INPUT_SIZE; ++i)
 		pinMode(PINS_INPUT[i], INPUT_PULLDOWN);
 	for (uint8_t i = 0; i < PINS_OUTPUT_SIZE; ++i)
@@ -35,7 +35,7 @@ bool SenseBoard::init() {
 	return true;
 }
 
-void SenseBoard::scan() {
+void SenseBoardHardware::scan() {
 	for (uint8_t idxOut = 0; idxOut < PINS_OUTPUT_SIZE; ++idxOut) { // rows / reed_switches
 		uint8_t pinOut = PINS_OUTPUT[idxOut];
 		writePin(pinOut, 1);
@@ -47,15 +47,15 @@ void SenseBoard::scan() {
 	}
 }
 
-bool SenseBoard::readPin(uint8_t pin) {
+bool SenseBoardHardware::readPin(uint8_t pin) {
 	return digitalRead(pin);
 }
-void SenseBoard::writePin(uint8_t pin, bool val) {
+void SenseBoardHardware::writePin(uint8_t pin, bool val) {
 	digitalWrite(pin, val ? HIGH : LOW);
 }
 
 //-----------------------------------------------------------------------------------------------------
-bool SenseBoardSerial::init() {
+bool SenseBoardWebGUI::init() {
 	Serial.begin(SERIAL_BAUDRATE);
 	// Set starting position
 	_state._rows[0] = 0xff;
@@ -65,11 +65,9 @@ bool SenseBoardSerial::init() {
 	return true;
 }
 
-void SenseBoardSerial::scan() {
+void SenseBoardWebGUI::scan() {
 	while (Serial.available()) {
 		PACKETTYPE type = static_cast<PACKETTYPE>(Serial.read());
-		// LOG("Packet type: "_f);
-		// LOGLN(static_cast<int>(type));
 		if (type == PACKETTYPE::STATE_UPDATE) {
 			int count = Serial.readBytes(_buffer, 8);
 			if (count < 8) {
@@ -77,7 +75,6 @@ void SenseBoardSerial::scan() {
 				return;
 			}
 			memcpy(_state._rows, _buffer, 8);
-			// LOGLN(*reinterpret_cast<int64_t*>(_buffer));
 		}
 	}
 }

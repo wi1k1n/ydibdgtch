@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 
+#include "interfaces/serial.h"
 #include "senseboard.h"
 #include "ledmatrix.h"
 #include "wifiinterface.h"
@@ -16,8 +17,9 @@ enum class ControllerMode {
 	GAME_PAUSED
 }; 
 
-// SenseBoard board;
-SenseBoardSerial board;
+CommunicationProtocol<SerialCommunication> comm;
+// SenseBoardHardware board;
+SenseBoardWebGUI board;
 LEDMatrix leds;
 // WiFiManager wifiManager;
 
@@ -30,11 +32,14 @@ GSResolver resolver;
 
 void setup() {
 #ifdef _DEBUG_
-	Serial.begin(SERIAL_BAUDRATE);
 	delay(100);
+	Serial.begin(SERIAL_BAUDRATE);
+	delay(100); LOGLN(); delay(100); LOGLN(); LOGLN();
 #endif
-	Serial.println();
-	Serial.print(F("Chess rules engine: "));
+
+	if (!comm.init() || !comm.communicationBegin()) return;
+
+	Serial.print("Chess rules engine: ");
 	Serial.println(engine.toString());
 	
 	// if (!btn.init(PIN_PUSHBUTTON1))
@@ -47,11 +52,11 @@ void setup() {
 	// wifiManager.init();
 
 #ifdef _DEBUG_
-	delay(20); // small delay to make sure webgui receives starting fen as a separate package
-	LOG(engine.getStartingState().toFEN());
-	delay(20);
-	LOG(engine.getStartingState().toFEN());
-	delay(20);
+	{
+		String fen = engine.getStartingState().toFEN();
+		// LOG(fen);
+		comm.send(fen);
+	}
 #endif
 
 	mode = ControllerMode::GAME_RUNNING;
@@ -63,20 +68,20 @@ CellCRGB setLEDColor(uint8_t idx) {
 }
 
 void loop() {
+	if (comm.tick()) {
+		
+	}
 	if (mode == ControllerMode::GAME_RUNNING) {
 		board.scan();
 		if (debouncer.tick(board.getState())) { // if there was a change
 			// board.print();
 			GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
-			if (resolveInfo.isFinished) {
-				ChessGameState state = resolver.getGameState();
-				if (state.isUndefined()) {
-					DLOGLN("Got Undefined game state!");
-				} else {
-					delay(100);
-					LOG(state.toFEN());
-					delay(100);
-				}
+			LOGLN(resolveInfo.toString());
+			ChessGameState state = resolver.getGameState();
+			if (state.isUndefined()) {
+				DLOGLN("Got Undefined game state!");
+			} else {
+				comm.send(state.toFEN());
 			}
 			// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
 			// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
