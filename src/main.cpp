@@ -12,43 +12,50 @@
 #include "rulesengine.h"
 #include "stateresolver.h"
 
-enum class ControllerMode {
-	GAME_RUNNING = 0,
-	GAME_PAUSED
-}; 
+class Application {
+	CommunicationProtocol<SerialCommunication> comm;
+	// SenseBoardHardware board;
+	SenseBoardWebGUI board;
+	LEDMatrix leds;
+	// WiFiManager wifiManager;
 
-CommunicationProtocol<SerialCommunication> comm;
-// SenseBoardHardware board;
-SenseBoardWebGUI board;
-LEDMatrix leds;
-// WiFiManager wifiManager;
+	PushButton btn;
 
-PushButton btn;
+	ClassicChessRules engine;
+	SenseBoardStateDebouncer debouncer;
+	GSResolver resolver;
+public:
+	bool init();
+	bool tick();
+};
 
-ControllerMode mode = ControllerMode::GAME_PAUSED;
-ClassicChessRules engine;
-SenseBoardStateDebouncer debouncer;
-GSResolver resolver;
+CellCRGB setLEDColor(uint8_t idx);
 
-void setup() {
+bool Application::init() {
 #ifdef _DEBUG_
 	delay(100);
 	Serial.begin(SERIAL_BAUDRATE);
 	delay(100); LOGLN(); delay(100); LOGLN(); LOGLN();
 #endif
 
-	if (!comm.init() || !comm.communicationBegin()) return;
+	if (!comm.init() || !comm.communicationBegin())
+		return false;
 
 	Serial.print("Chess rules engine: ");
 	Serial.println(engine.toString());
 	
 	// if (!btn.init(PIN_PUSHBUTTON1))
-	// 	return;
-	if (!board.init()) return;
-	if (!debouncer.init(board.getState())) return;
-	if (!resolver.init(engine, engine.getStartingState())) return;
+	// 	return false;
 
-	if (!leds.init()) return;
+	if (!board.init()) 
+		return false;
+	if (!debouncer.init(board.getState())) 
+		return false;
+	if (!resolver.init(engine, engine.getStartingState())) 
+		return false;
+
+	if (!leds.init()) 
+		return false;
 	// wifiManager.init();
 
 #ifdef _DEBUG_
@@ -58,38 +65,45 @@ void setup() {
 		comm.send(fen);
 	}
 #endif
-
-	mode = ControllerMode::GAME_RUNNING;
+	return true;
 }
 
-CellCRGB setLEDColor(uint8_t idx) {
-	bool val = board.getState(idx);
-	return val ? CellCRGB(0xFFFFFF) : CellCRGB(0x0);
-}
-
-void loop() {
+bool Application::tick() {
 	if (comm.tick()) {
-		
+
 	}
-	if (mode == ControllerMode::GAME_RUNNING) {
-		board.scan();
-		if (debouncer.tick(board.getState())) { // if there was a change
-			// board.print();
-			GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
-			LOGLN(resolveInfo.toString());
-			ChessGameState state = resolver.getGameState();
-			if (state.isUndefined()) {
-				DLOGLN("Got Undefined game state!");
-			} else {
-				comm.send(state.toFEN());
-			}
-			// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
-			// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
+	board.scan();
+	if (debouncer.tick(board.getState())) { // if there was a change
+		// board.print();
+		GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
+		LOGLN(resolveInfo.toString());
+		ChessGameState state = resolver.getGameState();
+		if (state.isUndefined()) {
+			DLOGLN("Got Undefined game state!");
+		} else {
+			comm.send(state.toFEN());
 		}
+		// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
+		// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
 	}
 
 	// wifiManager.tick();
-	leds.showLEDs(&setLEDColor);
+	std::function<CellCRGB(uint8_t)> setLEDColor = [&](uint8_t idx) {
+		bool val = board.getState(idx);
+		return val ? CellCRGB(0xFFFFFF) : CellCRGB(0x0);
+	};
+	leds.showLEDs(setLEDColor);
 
 	delay(50); // TODO: timer instead, please!
+}
+
+Application app;
+void setup() {
+	if (!app.init()) {
+		Serial.begin(SERIAL_BAUDRATE);
+		Serial.println("Could not initialize Application class instance!"_f);
+	}
+}
+void loop() {
+	app.tick();
 }
