@@ -14,8 +14,63 @@
 #include "rulesengine.h"
 #include "stateresolver.h"
 
+const String PACKETS_INCOME[] = {
+	"93379838", 	// setfen
+	"70988515"	 	// setboard
+};
+struct PACKETS_OUTCOME {
+	const String setfen = 			"42751315";
+};
+
+const size_t SERIALBUFFERSIZE = 127;
+char serialBuffer[SERIALBUFFERSIZE + 1];
+void sendPacket(const String& packetOutcome, const String& msg) {
+	Serial.print(packetOutcome + msg);
+}
+uint8_t receivePacket(String& msg) {
+	if (!Serial.available()) return 255;
+
+	uint8_t packetIdx = 255;
+	size_t nBytes = Serial.readBytes(serialBuffer, 8);
+	if (nBytes == 8) {
+		constexpr size_t packetNumber = sizeof(PACKETS_INCOME) / sizeof(PACKETS_INCOME[0]);
+		for (uint8_t i = 0; i < packetNumber; ++i) {
+			if (!memcmp(serialBuffer, PACKETS_INCOME[i].begin(), 8)) {
+				packetIdx = i;
+				break;
+			}
+		}
+	}
+
+	if (packetIdx == 255) { // unknown packet type
+		LOGLN(Serial.readString());
+		return 255; 
+	}
+	
+	nBytes = Serial.readBytes(serialBuffer, 4);
+	if (nBytes < 4) { DLOGLN("Invalid"_f); return 255; } // invalid msg size
+
+	char strLenBuff[5];
+	memcpy(strLenBuff, serialBuffer, 4);
+	strLenBuff[4] = 0;
+	uint16_t strLen = atoi(strLenBuff);
+	
+	if (strLen < 0) { DLOGLN("Invalid"_f); return 255; } // error
+	if (strLen > SERIALBUFFERSIZE) { DLOG("Wow wow, too big msg: "); LOGLN(strLen); } // warning
+
+	msg = String();
+	while (strLen > 0) {
+		size_t cnt = Serial.readBytes(serialBuffer, min(SERIALBUFFERSIZE, static_cast<size_t>(strLen)));
+		serialBuffer[cnt] = 0;
+		msg += String(serialBuffer);
+		strLen -= cnt;
+	}	
+
+	return packetIdx;
+}
+
 class Application {
-	CommunicationProtocol<SerialCommunication> comm;
+	// CommunicationProtocol<SerialCommunication> comm;
 
 	// SenseBoardHardware board;
 	SenseBoardWebGUI board;
@@ -46,8 +101,8 @@ bool Application::init() {
 	delay(100); LOGLN(); delay(100); LOGLN(); LOGLN();
 #endif
 
-	if (!comm.init() || !comm.communicationBegin())
-		return false;
+	// if (!comm.init() || !comm.communicationBegin())
+	// 	return false;
 
 	Serial.print("Chess rules engine: ");
 	Serial.println(engine.toString());
@@ -82,10 +137,31 @@ bool Application::init() {
 }
 
 bool Application::tick() {
-	// if (comm.tick()) {
+	{ // Serial communication
+		String msg;
+		for (uint8_t packetIdx = receivePacket(msg); packetIdx != 255; packetIdx = receivePacket(msg))
+			switch (packetIdx) {
+				case 0: { // setfen
+					// LOG("setfen: "); LOGLN(msg);
+					if (!resolver.init(engine, ChessGameState(msg))) 
+						DLOGLN("Couldn't init resolver!"_f);
+					break;
+				}
+				case 1: { // setboard
+					// LOG("setboard: "); LOGLN(msg);
+					if (msg.length() != 64) {
+						DLOGLN("Incorrect board state!"_f);
+					} else {
+						for (uint8_t i = 0; i < 64; ++i)
+							board.setState(i, msg[i] == '1');
+						if (!debouncer.init(board.getState())) 
+							DLOGLN("Couldn't initialize debouncer!"_f);
+					}
+					break;
+				}
+			}
+	}
 
-	// }
-	
 	if (tmrBoardScan.tick())
 		board.scan();
 

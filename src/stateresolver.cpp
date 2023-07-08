@@ -2,6 +2,7 @@
 
 bool GSTree::init(const ChessGameState& initState) {
 	_initState = initState;
+	_branches.clear();
 	_branches.push_back(GSBranch(this));
 	return true;
 }

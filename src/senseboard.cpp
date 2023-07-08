@@ -65,16 +65,4 @@ bool SenseBoardWebGUI::init() {
 	return true;
 }
 
-void SenseBoardWebGUI::scan() {
-	while (Serial.available()) {
-		PACKETTYPE type = static_cast<PACKETTYPE>(Serial.read());
-		if (type == PACKETTYPE::STATE_UPDATE) {
-			int count = Serial.readBytes(_buffer, 8);
-			if (count < 8) {
-				Serial.flush();
-				return;
-			}
-			memcpy(_state._rows, _buffer, 8);
-		}
-	}
-}
+void SenseBoardWebGUI::scan() { return; } // dummy func

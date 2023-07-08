@@ -1,5 +1,13 @@
+const PACKETS_INCOME = {
+	'setfen': 			['42751315', (m)=>{ console.log('setfen: ', m); }],
+};
+const PACKETS_OUTCOME = {
+	'setfen': 			['93379838', (m)=>{ console.log('setfen: ', m); }],
+	'setboard': 		['70988515', (m)=>{ console.log('sendboard: ', m); }],
+};
+
 const BAUD_RATE = 115200;
-const SERIAL_READ_WAIT_TIMEOUT = 10; // ms
+const SERIAL_READ_WAIT_TIMEOUT = 20; // ms
 const PACKETTYPE__STATE_UPDATE = 0b10110001;
 
 ///////////////////////////////////////////////////////////////////////////
@@ -13,82 +21,175 @@ const SQUARE_COLOR_INACTIVE = 'rgb(231, 231, 231)';
 const SQUARE_COLOR_HOVER = 'rgb(196, 255, 191)';
 const SQUARE_COLOR_CLICKED = 'rgb(255, 234, 118)';
 
+
 ////////////////////////////////////////////////////////////////////////////
-
-function fenReceived(fen) {
-	board.position(fen);	
-}
-
+////////////////////////////////// SERIAL //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
 if ("serial" in navigator === false)
 	alert("SerialPort isn't supported!!!");
 
-var port = null;
-document.querySelector('#btnConnect').addEventListener('click', async () => {
-	// const filters = [{usbVendorId: 0x1a86, usbProductId: 0x7523}];
-	const filters = [];
-	port = await navigator.serial.requestPort({filters});
-	if (!port) {
-		consolge.log("couldn't request ports!");
-		return;
-	}
-	await port.open({baudRate: BAUD_RATE});
-	console.log('Serial port opened: ', port.getInfo());
-
-	while (port.readable) {
-		const reader = port.readable.getReader();
-		try {
-			let received = new Uint8Array();
-			let timeoutId = 0;
-			while (true) {
-				const { value, done } = await reader.read();
-				if (done)
-					break;
-				if (value) {
-					const tArr = new Uint8Array(received.length + value.length);
-					tArr.set(received);
-					tArr.set(value, received.length);
-					received = tArr;
-					clearTimeout(timeoutId);
-					timeoutId = setTimeout(() => {
-						// console.log(received);
-						const receivedStr = new TextDecoder().decode(received).trim();
-						console.log(receivedStr);
-						fenReceived(receivedStr);
-						received = new Uint8Array(); // not thread safe, but would work for now
-					}, SERIAL_READ_WAIT_TIMEOUT);
-				}
-			}
-		} catch (error) {
-			console.error(error);
-		} finally {
-			reader.releaseLock();
+function serialReceived(msg) {
+	console.log(msg);
+	for (const packetsKey in PACKETS_INCOME) {
+		const packetEntry = PACKETS_INCOME[packetsKey];
+		const packetId = packetEntry[0];
+		if (msg.startsWith(packetId)) {
+			packetEntry[1](msg.substring(packetId.length));
+			break;
 		}
 	}
-});
-
-async function sendBoardUpdate() {
-	const writer = port.writable.getWriter();
-	if (writer === null)
-		return;
-	
-	let data = new Uint8Array(9);
-	data[0] = PACKETTYPE__STATE_UPDATE;
-	for (let row = 0; row < 8; ++row) {
-		let curByte = squares[row * 8 + 7].state;
-		for (let col = 6; col >= 0; --col)
-			curByte = (curByte << 1) | squares[row * 8 + col].state;
-		data[row + 1] = curByte;
-	}
-	// console.log('sending: ', data);
-
-	await writer.write(data);
-	writer.releaseLock();
 }
 
+var port = null;
 
-//////////////////////////////////////////////////////////////////////////////
+async function readSerial() {
+	const reader = port.readable.getReader();
+	let chunks = [];
+
+	function decodeChunks(chunks) {
+		const length = chunks.reduce((accum, curval) => accum + curval.length, 0);
+		// console.log('length:', length);
+		let mergedArray = new Uint8Array(length);
+		let offset = 0;
+		chunks.forEach(item => {
+			mergedArray.set(item, offset);
+			offset += item.length;
+		});
+		return (new TextDecoder()).decode(mergedArray);
+	}
+
+	try {
+		let timeoutId = 0;
+		function readingComplete() {
+			serialReceived(decodeChunks(chunks))
+			chunks = []; // not thread safe, but would work for now
+		}
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) {
+				console.log("Stream complete");
+				readingComplete();
+				break;
+			}
+			if (value) {
+				// console.log('chunk:', value);
+				chunks.push(value);
+
+				clearTimeout(timeoutId);
+				timeoutId = setTimeout(readingComplete, SERIAL_READ_WAIT_TIMEOUT);
+			}
+		}
+	} catch (error) {
+		console.error(error);
+	} finally {
+		reader.releaseLock();
+	}
+}
+
+async function openPort() {
+	await port.open({baudRate: BAUD_RATE});
+	console.log('Serial port opened: ', port.getInfo());
+	
+
+	while (port.readable) {
+		await readSerial();
+	}
+	console.log('after while(port.readable);');
+}
+
+async function sendStringToSerial(msg) {
+	const writer = port.writable.getWriter();
+	const encoder = new TextEncoder();
+	const encoded = encoder.encode(msg);
+	await writer.write(encoded);
+	writer.releaseLock();
+	console.log('%c' + msg, 'color: #bada55');
+}
+
+async function sendSerialPacket(packetId, msg) {
+	const zeroPad = (number, places) => String(number).padStart(places, '0');
+	await sendStringToSerial(packetId + zeroPad(msg.length, 4) + msg);
+}
+
+//--//--// Port connection
+document.querySelector('#btnConnect').addEventListener('click', async () => {
+	navigator.serial.getPorts().then(async (ports) => {
+		console.log(ports);
+		if (ports.length == 1) {
+			port = ports[0];
+			await openPort();
+		}
+	}).then(async () => {
+		// const filters = [{usbVendorId: 0x1a86, usbProductId: 0x7523}]; // arduino
+		const filters = [{usbVendorId: 4292}]; // esp, all???
+		// const filters = [];
+		port = await navigator.serial.requestPort({filters});
+		if (!port)
+			return consolge.log("couldn't request ports!");
+		await openPort();
+	});
+
+});
+document.querySelector('#btnDisconnect').addEventListener('click', async () => {
+	if (!port)
+		return console.log('no open port found!');
+	await port.close();
+	console.log('Disconnected');
+});
+
+document.getElementById('btnSend').addEventListener('click', async function(evt) {
+	await sendStringToSerial(document.getElementById('txbxMsg').value);
+});
+
+document.getElementById('btnSendInitialization').addEventListener('click', async function(evt) {
+	await sendBoardFen();
+	await sendBoardUpdate();
+});
+
+
+
+async function sendBoardFen() {
+	await sendSerialPacket(PACKETS_OUTCOME['setfen'][0], board.fen());
+}
+async function sendBoardUpdate() {
+	let state = '';
+	for (let idx = 0; idx < 64; ++idx) {
+		state += squares[idx].state ? '1' : '0';
+	}
+	await sendSerialPacket(PACKETS_OUTCOME['setboard'][0], state);
+}
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////// CHESS ///////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+
+function setSquaresToBoard() {
+	let occupyMap = {};
+	for (const key in board.position()) {
+		const col = key.charCodeAt(0) - 'a'.charCodeAt(0);
+		const row = key.charCodeAt(1) - '1'.charCodeAt(0);
+		const idx = parseInt(row) * 8 + parseInt(col);
+		// console.log(key, '=>', idx);
+		occupyMap[idx] = 1;
+	}
+	for (let i = 0; i < squares.length; ++i) {
+		squares[i].stateSet(i in occupyMap ? 1 : 0);
+	}
+}
+
+document.getElementById('txbxFen').value = INITIAL_FEN;
+document.getElementById('btnSetFen').addEventListener('click', async function(evt) {
+	board.position(document.getElementById('txbxFen').value);
+});
+document.getElementById('btnSetBoard').addEventListener('click', async function(evt) {
+	setSquaresToBoard();
+});
+document.getElementById('slFens').addEventListener('change', async function(evt) {
+	document.getElementById('txbxFen').value = evt.target.value;
+});
+
+
 // https://konvajs.org/docs/events/Keyboard_Events.html
 
 let squares = [];
@@ -125,7 +226,8 @@ for (let i = 0; i < 64; ++i) {
 		this.fill(this.state ? SQUARE_COLOR_CLICKED : SQUARE_COLOR_INACTIVE);
 	}
 
-	rect.state = i < 16 || i > 47;
+	// rect.state = i < 16 || i > 47;
+	// rect.state = i in occupyMap ? 1 : 0;
 	rect.updateFill();
 
 
@@ -159,6 +261,7 @@ for (let i = 0; i < 64; ++i) {
 	squares.push(rect);
 	layer.add(rect);
 }
+setSquaresToBoard();
 
 stage.add(layer);
 

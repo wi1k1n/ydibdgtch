@@ -125,6 +125,7 @@ class GSResolver {
 public:
 	GSResolver() = default;
 
+	// TODO: Need a function to manually set up current game state!
 	bool init(const ChessRulesEngine& rules, const ChessGameState& initState);
 	const GSResolverInfo& update(const std::vector<ChessPieceLocation>& changes);
 	ChessGameState getGameState(uint8_t idx = 0) const;
