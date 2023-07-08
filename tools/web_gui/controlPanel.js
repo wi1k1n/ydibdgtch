@@ -3,7 +3,8 @@ const PACKETS_INCOME = {
 };
 const PACKETS_OUTCOME = {
 	'setfen': 			['93379838', (m)=>{ console.log('setfen: ', m); }],
-	'setboard': 		['70988515', (m)=>{ console.log('sendboard: ', m); }],
+	'setboard': 		['70988515', (m)=>{ console.log('setboard: ', m); }],
+	'updboard': 		['98716453', (m)=>{ console.log('updboard: ', m); }],
 };
 
 const BAUD_RATE = 115200;
@@ -144,7 +145,7 @@ document.getElementById('btnSend').addEventListener('click', async function(evt)
 
 document.getElementById('btnSendInitialization').addEventListener('click', async function(evt) {
 	await sendBoardFen();
-	await sendBoardUpdate();
+	await sendSetBoardState();
 });
 
 
@@ -152,12 +153,17 @@ document.getElementById('btnSendInitialization').addEventListener('click', async
 async function sendBoardFen() {
 	await sendSerialPacket(PACKETS_OUTCOME['setfen'][0], board.fen());
 }
-async function sendBoardUpdate() {
+function getBoardStateMsg() {
 	let state = '';
-	for (let idx = 0; idx < 64; ++idx) {
+	for (let idx = 0; idx < 64; ++idx)
 		state += squares[idx].state ? '1' : '0';
-	}
-	await sendSerialPacket(PACKETS_OUTCOME['setboard'][0], state);
+	return state;
+}
+async function sendBoardUpdate() {
+	await sendSerialPacket(PACKETS_OUTCOME['updboard'][0], getBoardStateMsg());
+}
+async function sendSetBoardState() {
+	await sendSerialPacket(PACKETS_OUTCOME['setboard'][0], getBoardStateMsg());
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -178,15 +184,30 @@ function setSquaresToBoard() {
 	}
 }
 
-document.getElementById('txbxFen').value = INITIAL_FEN;
+// document.getElementById('txbxFen').value = INITIAL_FEN;
 document.getElementById('btnSetFen').addEventListener('click', async function(evt) {
 	board.position(document.getElementById('txbxFen').value);
 });
 document.getElementById('btnSetBoard').addEventListener('click', async function(evt) {
 	setSquaresToBoard();
 });
+function updateTxbxFenValue(v) {
+	document.getElementById('txbxFen').value = v;
+}
+updateTxbxFenValue(document.getElementById('slFens').value);
 document.getElementById('slFens').addEventListener('change', async function(evt) {
-	document.getElementById('txbxFen').value = evt.target.value;
+	updateTxbxFenValue(evt.target.value);
+});
+document.getElementById('slFens').addEventListener('wheel', function(evt) {
+    if (evt.deltaY < 0)
+		this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+	else
+		this.selectedIndex = Math.min(this.selectedIndex + 1, this.length - 1);
+	updateTxbxFenValue(evt.target.value);
+	evt.preventDefault();
+});
+document.getElementById('btnGetFen').addEventListener('click', async function(evt) {
+	document.getElementById('txbxFen').value = board.fen();
 });
 
 
