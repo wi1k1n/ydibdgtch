@@ -15,8 +15,8 @@
 #define __PRIVATE_LOG_PREAMBULE	   (_UART_.print(__FILE__)+\
 									_UART_.print(F(":"))+\
 									_UART_.print(__LINE__)+\
-									_UART_.print(F(":"))+\
-									_UART_.print(__func__)+\
+									_UART_.print(F(" "))+\
+									_UART_.print(__PRETTY_FUNCTION__ )+\
 									_UART_.print(F("() - ")))
 #define DLOGLN(txt)		(__PRIVATE_LOG_PREAMBULE+_UART_.println(txt))
 #define DLOGF(fmt, ...)	(__PRIVATE_LOG_PREAMBULE+_UART_.printf(fmt, __VA_ARGS__))

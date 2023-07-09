@@ -118,19 +118,42 @@ struct GSResolverInfo {
 	}
 };
 
+class GSResolver;
+class GSNode {
+	GSResolver* _resolver = nullptr;
+	GSNode* _parent = nullptr; // weak ref
+	std::vector<GSNode*> _children; // strong refs
+	uint16_t _branchingMove = 0;
+	ChessGameState _initialState;
+	std::vector<ChessPiece> _buffer;
+public:
+	GSNode() = default;
+	GSNode(GSResolver* resolver, GSNode* parent, uint16_t branchingMove, const ChessGameState& init);
+	GSNode(const GSNode& other);
+	~GSNode();
+
+	void take(ChessPieceLocation pos); // piece disappeared from the board
+	void put(ChessPieceLocation pos); // piece appeared on the board
+
+	ChessGameState evaluateGameState() const;
+private:
+};
+
 class GSResolver {
-	const ChessRulesEngine* _rules = nullptr;
-	GSTree _tree;
-	GSResolverInfo _info;
+	const ChessRulesEngine* _rules = nullptr; // weak ref
+	std::vector<ChessPieceLocation> _moveLocations;
+	GSNode _root;
+	std::vector<GSNode*> _heads; // weak refs
 public:
 	GSResolver() = default;
 
 	// TODO: Need a function to manually set up current game state!
 	bool init(const ChessRulesEngine& rules, const ChessGameState& initState);
-	const GSResolverInfo& update(const std::vector<ChessPieceLocation>& changes);
+	const bool update(const std::vector<ChessPieceLocation>& changes);
 	ChessGameState getGameState(uint8_t idx = 0) const;
+	const std::vector<ChessPieceLocation>& getMoves() const { return _moveLocations; }
 private:
-	const GSResolverInfo& invalidateInfo() { _info = {true, false, false}; return _info; }
+	// const GSResolverInfo& invalidateInfo() { _info = {true, false, false}; return _info; }
 };
 
 #endif // STATERESOLVER_H__

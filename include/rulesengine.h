@@ -129,11 +129,13 @@ class ChessGameState {
 	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
 	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
 
-	bool _initFromFEN(const String& fenString);
+	/// @param allowPartial Still initialize even if FEN is incomplete
+	/// @return tru on success, false if failed
+	bool _initFromFEN(const String& fenString, bool allowPartial = true);
 public:
 	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE);
 	ChessGameState(const ChessGameState& other);
-	ChessGameState(const String& fenString);
+	ChessGameState(const String& fenString, bool allowPartial = true);
 
 	/// @brief Create a game state that is intentionally in the undefined/invalid state
 	static ChessGameState getUndefinedState() { return ChessGameState(CHESSINITIALSTATE::UNKNOWN, CHESSCOLOR::UNKNOWN); }
@@ -163,7 +165,7 @@ public:
 	
 	bool isLocationOccupied(const ChessPieceLocation& location) const;
 
-	bool isUndefined() const { return _colorToMove == CHESSCOLOR::UNKNOWN; } // TODO: more explicit way of undefined state?
+	bool isUndefined() const { return _colorToMove == CHESSCOLOR::UNKNOWN; } // TODO: more explicit way of undefined state?!
 	
 	String toString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
 	String toFEN() const;

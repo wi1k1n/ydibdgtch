@@ -102,17 +102,37 @@ ChessGameState::ChessGameState(const CHESSINITIALSTATE& initState, const CHESSCO
 }
 
 ChessGameState::ChessGameState(const ChessGameState& other)
-	: _pieces(other._pieces), _colorToMove(other._colorToMove), _fullMoves(other._fullMoves), _halfMoves(other._halfMoves) { }
-
-ChessGameState::ChessGameState(const String& fenString) {
-	_initFromFEN(fenString);
+	: _pieces(other._pieces), _colorToMove(other._colorToMove), _fullMoves(other._fullMoves), _halfMoves(other._halfMoves) {
+	// for (const auto& entry : other._pieces) {
+	// 	LOG(entry.first.toString());
+	// 	LOG(" => "_f);
+	// 	LOGLN(entry.second.toString());
+	// }
+	// for (const auto& entry : _pieces) {
+	// 	LOG(entry.first.toString());
+	// 	LOG(" => "_f);
+	// 	LOGLN(entry.second.toString());
+	// }
 }
 
-bool ChessGameState::_initFromFEN(const String& fenString) {
-	Serial.print("Loading from FEN: ");
-	Serial.println(fenString);
+ChessGameState::ChessGameState(const String& fenString, bool allowPartial) {
+	_initFromFEN(fenString, allowPartial);
+}
 
-	auto invalidate = [this]() {
+bool ChessGameState::_initFromFEN(const String& fenString, bool allowPartial) {
+	LOG("Loading from FEN: ");
+	LOGLN(fenString);
+
+	bool minimallyInitialized = false;
+	auto invalidate = [this, allowPartial, minimallyInitialized]() {
+		
+		// for (const auto& entry : _pieces) {
+		// 	LOG(entry.first.toString());
+		// 	LOG(" => "_f);
+		// 	LOGLN(entry.second.toString());
+		// }
+		if (allowPartial && minimallyInitialized)
+			return true;
 		this->_pieces.clear();
 		this->_colorToMove = CHESSCOLOR::UNKNOWN;
 		this->_fullMoves = 0;
@@ -121,23 +141,26 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 	};
 
 	// 1. Handle pieces placement part
-	std::vector<String> rows(8);
-	uint8_t rowIdx = 0;
 	uint8_t fenCursor = 0;
-	for (fenCursor = 0; fenCursor < fenString.length(); ++fenCursor) {
-		char cc = fenString[fenCursor];
-		if (cc == ' ')
-			break;
-		if (cc == '/') {
-			++rowIdx;
-			continue;
+	std::vector<String> rows(8);
+	{ // retrieve strings that corresponds to rows
+		uint8_t rowIdx = 0;
+		for (fenCursor = 0; fenCursor < fenString.length(); ++fenCursor) {
+			char cc = fenString[fenCursor];
+			if (cc == ' ')
+				break;
+			if (cc == '/') {
+				++rowIdx;
+				continue;
+			}
+			rows[rowIdx] += fenString[fenCursor];
 		}
-		rows[rowIdx] += fenString[fenCursor];
+		// Validate content and create pieces
+		if (rowIdx != 7)
+			return invalidate();
 	}
-	// Validate content and create pieces
-	if (rowIdx != 7)
-		return invalidate();
 	
+	// process rows
 	for (int8_t rowIdx = 7; rowIdx >= 0; --rowIdx) {
 		const String& row = rows[7 - rowIdx];
 
@@ -157,11 +180,13 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 			if (!piece.isValid())
 				return invalidate();
 			set(rowIdx, pieceCounter++, piece);
+			LOG(at(rowIdx, pieceCounter-1).toString()); LOG(" -> "_f); LOG(rowIdx); LOG(";"); LOGLN(pieceCounter - 1);
 		}
 		if (pieceCounter > 8)
 			return invalidate();
 	}
-	Serial.println("1. Handle pieces placement part");
+	minimallyInitialized = true;
+	LOGLN("1. Handle pieces placement part");
 
 	// 2. Color to move
 	if (++fenCursor >= fenString.length())
@@ -177,7 +202,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 	
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
 		return invalidate();
-	Serial.println("2. Color to move");
+	LOGLN("2. Color to move");
 	
 	// 3. Castling options
 	if (fenCursor >= fenString.length())
@@ -194,7 +219,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 		if (castlingCharCount > 4)
 			return invalidate();
 	}
-	Serial.println("3. Castling options");
+	LOGLN("3. Castling options");
 	
 	// 4. En-passant pawn
 	if (++fenCursor >= fenString.length())
@@ -223,7 +248,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 			invalidate();
 		pawn.setHistory(true);
 	}
-	Serial.println("4. En-passant pawn");
+	LOGLN("4. En-passant pawn");
 	
 	// 5. Half-moves since last pawn advance
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
@@ -239,7 +264,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 		halfMoves += static_cast<char>(cc);
 	}
 	_halfMoves = halfMoves.toInt();
-	Serial.println("5. Half-moves since last pawn advance");
+	LOGLN("5. Half-moves since last pawn advance");
 	
 	// 6. Full-moves since start
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
@@ -257,7 +282,7 @@ bool ChessGameState::_initFromFEN(const String& fenString) {
 	_fullMoves = fullMoves.toInt();
 	if (_fullMoves == 0)
 		return invalidate();
-	Serial.println("6. Full-moves since start");
+	LOGLN("6. Full-moves since start");
 	
 	return true;
 }

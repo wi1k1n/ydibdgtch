@@ -15,8 +15,9 @@
 #include "stateresolver.h"
 
 const String PACKETS_INCOME[] = {
-	"93379838", 	// setfen
-	"70988515"	 	// setboard
+	"93379838", 	// 0	setfen
+	"70988515",	 	// 1	setboard
+	"98716453", 	// 2	updboard
 };
 struct PACKETS_OUTCOME {
 	const String setfen = 			"42751315";
@@ -85,14 +86,57 @@ class Application {
 	SenseBoardStateDebouncer debouncer;
 	GSResolver resolver;
 
-	
 	ChessGameState currentResolvedState; // TODO: do caching in the GSResolver instead!
 public:
 	bool init();
 	bool tick();
+
+	void communicateSerial();
 };
 
-CellCRGB setLEDColor(uint8_t idx);
+void Application::communicateSerial() {
+	String msg;
+	for (uint8_t packetIdx = receivePacket(msg); packetIdx != 255; packetIdx = receivePacket(msg))
+		switch (packetIdx) {
+			case 0: { // setfen
+				// LOG("setfen: "); LOGLN(msg);
+				currentResolvedState = ChessGameState(msg);
+				// for (const auto& entry : currentResolvedState._pieces) {
+				// 	LOG(entry.first.toString());
+				// 	LOG(" => "_f);
+				// 	LOGLN(entry.second.toString());
+				// }
+				LOGLN("New resolved state: "_f);
+				LOGLN(currentResolvedState.toString());
+				if (!resolver.init(engine, ChessGameState(msg))) 
+					DLOGLN("Couldn't init resolver!"_f);
+				currentResolvedState = resolver.getGameState();
+				break;
+			}
+			case 1: { // setboard
+				// LOG("setboard: "); LOGLN(msg);
+				if (msg.length() != 64) {
+					DLOGLN("Incorrect board state!"_f);
+				} else {
+					for (uint8_t i = 0; i < 64; ++i)
+						board.setState(i, msg[i] == '1');
+					if (!debouncer.init(board.getState())) 
+						DLOGLN("Couldn't initialize debouncer!"_f);
+				}
+				break;
+			}
+			case 2: { // updboard
+				// LOG("updboard: "); LOGLN(msg);
+				if (msg.length() != 64) {
+					DLOGLN("Incorrect board state!"_f);
+				} else {
+					for (uint8_t i = 0; i < 64; ++i)
+						board.setState(i, msg[i] == '1');
+				}
+				break;
+			}
+		}
+}
 
 bool Application::init() {
 #ifdef _DEBUG_
@@ -137,37 +181,13 @@ bool Application::init() {
 }
 
 bool Application::tick() {
-	{ // Serial communication
-		String msg;
-		for (uint8_t packetIdx = receivePacket(msg); packetIdx != 255; packetIdx = receivePacket(msg))
-			switch (packetIdx) {
-				case 0: { // setfen
-					// LOG("setfen: "); LOGLN(msg);
-					if (!resolver.init(engine, ChessGameState(msg))) 
-						DLOGLN("Couldn't init resolver!"_f);
-					break;
-				}
-				case 1: { // setboard
-					// LOG("setboard: "); LOGLN(msg);
-					if (msg.length() != 64) {
-						DLOGLN("Incorrect board state!"_f);
-					} else {
-						for (uint8_t i = 0; i < 64; ++i)
-							board.setState(i, msg[i] == '1');
-						if (!debouncer.init(board.getState())) 
-							DLOGLN("Couldn't initialize debouncer!"_f);
-					}
-					break;
-				}
-			}
-	}
-
+	communicateSerial();
 	if (tmrBoardScan.tick())
 		board.scan();
 
 	if (debouncer.tick(board.getState())) { // if there was a change
 		board.print();
-		GSResolverInfo resolveInfo = resolver.update(debouncer.getChanges());
+		bool success = resolver.update(debouncer.getChanges());
 		// LOGLN(resolveInfo.toString());
 		currentResolvedState = resolver.getGameState();
 		if (currentResolvedState.isUndefined()) {
