@@ -111,21 +111,17 @@ ChessGameState::ChessGameState(const CHESSINITIALSTATE& initState, const CHESSCO
 }
 
 ChessGameState::ChessGameState(const ChessGameState& other)
-	: _pieces(other._pieces), _colorToMove(other._colorToMove), _fullMoves(other._fullMoves), _halfMoves(other._halfMoves) {
-	// for (const auto& entry : other._pieces) {
-	// 	LOG(entry.first.toString());
-	// 	LOG(" => "_f);
-	// 	LOGLN(entry.second.toString());
-	// }
-	// for (const auto& entry : _pieces) {
-	// 	LOG(entry.first.toString());
-	// 	LOG(" => "_f);
-	// 	LOGLN(entry.second.toString());
-	// }
-}
+	: _pieces(other._pieces), _colorToMove(other._colorToMove), _fullMoves(other._fullMoves), _halfMoves(other._halfMoves) { }
 
 ChessGameState::ChessGameState(const String& fenString, bool allowPartial) {
 	_initFromFEN(fenString, allowPartial);
+	LOG("Initialized CGS"_f);
+	// for (const auto& entry : this->_pieces) {
+	// 	LOG(entry.first.toString());
+	// 	LOG(" => "_f);
+	// 	LOGLN(entry.second.toString());
+	// }
+	LOGLN();
 }
 
 bool ChessGameState::_initFromFEN(const String& fenString, bool allowPartial) {
@@ -133,15 +129,16 @@ bool ChessGameState::_initFromFEN(const String& fenString, bool allowPartial) {
 	LOGLN(fenString);
 
 	bool minimallyInitialized = false;
-	auto invalidate = [this, allowPartial, minimallyInitialized]() {
-		
-		// for (const auto& entry : _pieces) {
+	auto invalidate = [&]() {
+		// for (const auto& entry : this->_pieces) {
 		// 	LOG(entry.first.toString());
 		// 	LOG(" => "_f);
 		// 	LOGLN(entry.second.toString());
 		// }
 		if (allowPartial && minimallyInitialized)
 			return true;
+
+		DLOGLN("Invalidated with false"_f);
 		this->_pieces.clear();
 		this->_colorToMove = CHESSCOLOR::UNKNOWN;
 		this->_fullMoves = 0;
@@ -189,7 +186,7 @@ bool ChessGameState::_initFromFEN(const String& fenString, bool allowPartial) {
 			if (!piece.isValid())
 				return invalidate();
 			set(rowIdx, pieceCounter++, piece);
-			LOG(at(rowIdx, pieceCounter-1).toString()); LOG(" -> "_f); LOG(rowIdx); LOG(";"); LOGLN(pieceCounter - 1);
+			// LOG(at(rowIdx, pieceCounter-1).toString()); LOG(" -> "_f); LOG(rowIdx); LOG(";"); LOGLN(pieceCounter - 1);
 		}
 		if (pieceCounter > 8)
 			return invalidate();

@@ -109,7 +109,8 @@ void GSNode::take(ChessPieceLocation pos) {
 	LOG("GSN-"_f); LOG(String(reinterpret_cast<uint32_t>(this), HEX)); LOG(" "_f);
 
 	ChessGameState state = evaluateGameState();
-	ChessPiece piece;
+	DLOGLN(state.toString());
+	ChessPiece piece = state.at(pos);
 	if (!piece.isValid()) {
 		LOG("! Take operation: no piece at "_f); LOGLN(pos.toString());
 		return;
@@ -121,7 +122,8 @@ void GSNode::take(ChessPieceLocation pos) {
 void GSNode::put(ChessPieceLocation pos) {
 	LOG("GSN-"_f); LOG(String(reinterpret_cast<uint32_t>(this), HEX)); LOG(" "_f);
 	ChessGameState state = evaluateGameState();
-	ChessPiece piece;
+	DLOGLN(state.toString());
+	ChessPiece piece = state.at(pos);
 	if (piece.isValid()) {
 		LOG("! Put operation: there's a piece "_f); LOG(piece.toString()); LOG(" at "_f); LOGLN(pos.toString());
 		return;

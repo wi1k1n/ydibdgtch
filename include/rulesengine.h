@@ -123,15 +123,6 @@ class ChessGameState {
 	CHESSCOLOR _colorToMove = CHESSCOLOR::WHITE;
 	uint16_t _fullMoves = 1;
 	uint8_t _halfMoves = 0;
-
-	void _fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
-	void _fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
-	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
-	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
-
-	/// @param allowPartial Still initialize even if FEN is incomplete
-	/// @return tru on success, false if failed
-	bool _initFromFEN(const String& fenString, bool allowPartial = true);
 public:
 	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE);
 	ChessGameState(const ChessGameState& other);
@@ -170,6 +161,16 @@ public:
 	String toString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
 	String toFEN() const;
 	bool operator==(const ChessGameState& other) const { return _pieces == other._pieces; }
+	
+private:
+	void _fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
+	void _fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
+	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
+	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
+
+	/// @param allowPartial Still initialize even if FEN is incomplete
+	/// @return tru on success, false if failed
+	bool _initFromFEN(const String& fenString, bool allowPartial = true);
 };
 
 typedef std::pair<ChessGameState, ChessMove> ChessTurn;
