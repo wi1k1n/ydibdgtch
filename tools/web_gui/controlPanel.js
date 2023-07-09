@@ -1,5 +1,5 @@
 const PACKETS_INCOME = {
-	'setfen': 			['42751315', (m)=>{ console.log('setfen: ', m); }],
+	'42751315': (m) => { console.log('setfen: ', m); board.position(m); }, // setfen
 };
 const PACKETS_OUTCOME = {
 	'setfen': 			['93379838', (m)=>{ console.log('setfen: ', m); }],
@@ -31,14 +31,45 @@ if ("serial" in navigator === false)
 	alert("SerialPort isn't supported!!!");
 
 function serialReceived(msg) {
-	console.log(msg);
-	for (const packetsKey in PACKETS_INCOME) {
-		const packetEntry = PACKETS_INCOME[packetsKey];
-		const packetId = packetEntry[0];
-		if (msg.startsWith(packetId)) {
-			packetEntry[1](msg.substring(packetId.length));
-			break;
+	function isLineAPacket(line) { // checks if given line is a packet and returns packetId
+		for (const packetId in PACKETS_INCOME) {
+			if (line.startsWith(packetId))
+				return packetId;
 		}
+		return -1;
+	}
+
+	// split incoming message into parts of raw output and packet-lines
+	let msgParts = []; // list of tuples: <string, bool> (message and packet idx)
+	let currentPart = "";
+	let msgLines = msg.split(/\r?\n|\r|\n/g);
+	for (const line of msgLines) {
+		const packetId = isLineAPacket(line);
+		if (packetId > -1) {
+			if (currentPart.length) {
+				msgParts.push([currentPart.substring(0, currentPart.length - 2), -1]);
+			}
+			msgParts.push([line, packetId]);
+			currentPart = "";
+			continue;
+		}
+		currentPart += line + '\r\n';
+	}
+	if (currentPart.length) {
+		msgParts.push([currentPart.substring(0, currentPart.length - 2), -1]);
+	}
+
+	// process message parts properly
+	for (const msgPart of msgParts) {
+		const packetId = msgPart[1];
+		if (packetId > -1) { // it's a packet part
+			const packetHandler = PACKETS_INCOME[packetId];
+			const msgPayload = msgPart[0].substring(packetId.length);
+			console.log('%c['+packetId+'] '+msgPayload, 'color: #6ac8ff');
+			packetHandler(msgPayload);
+			continue;
+		}
+		console.log('%c' + msgPart[0], 'color: #f5b2ef');
 	}
 }
 

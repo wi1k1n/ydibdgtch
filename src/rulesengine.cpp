@@ -115,13 +115,13 @@ ChessGameState::ChessGameState(const ChessGameState& other)
 
 ChessGameState::ChessGameState(const String& fenString, bool allowPartial) {
 	_initFromFEN(fenString, allowPartial);
-	LOG("Initialized CGS"_f);
+	// LOG("Initialized CGS"_f);
 	// for (const auto& entry : this->_pieces) {
 	// 	LOG(entry.first.toString());
 	// 	LOG(" => "_f);
 	// 	LOGLN(entry.second.toString());
 	// }
-	LOGLN();
+	// LOGLN();
 }
 
 bool ChessGameState::_initFromFEN(const String& fenString, bool allowPartial) {

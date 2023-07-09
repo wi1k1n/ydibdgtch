@@ -109,7 +109,7 @@ void GSNode::take(ChessPieceLocation pos) {
 	LOG("GSN-"_f); LOG(String(reinterpret_cast<uint32_t>(this), HEX)); LOG(" "_f);
 
 	ChessGameState state = evaluateGameState();
-	DLOGLN(state.toString());
+	// LOGLN(state.toString());
 	ChessPiece piece = state.at(pos);
 	if (!piece.isValid()) {
 		LOG("! Take operation: no piece at "_f); LOGLN(pos.toString());
@@ -122,7 +122,7 @@ void GSNode::take(ChessPieceLocation pos) {
 void GSNode::put(ChessPieceLocation pos) {
 	LOG("GSN-"_f); LOG(String(reinterpret_cast<uint32_t>(this), HEX)); LOG(" "_f);
 	ChessGameState state = evaluateGameState();
-	DLOGLN(state.toString());
+	// DLOGLN(state.toString());
 	ChessPiece piece = state.at(pos);
 	if (piece.isValid()) {
 		LOG("! Put operation: there's a piece "_f); LOG(piece.toString()); LOG(" at "_f); LOGLN(pos.toString());
@@ -138,7 +138,7 @@ void GSNode::put(ChessPieceLocation pos) {
 ChessGameState GSNode::evaluateGameState() const {
 	ChessGameState currentState = _initialState;
 	const std::vector<ChessPieceLocation>& moves = _resolver->getMoves();
-	std::vector<ChessPiece> buffer(2);
+	std::vector<ChessPiece> buffer;
 	DLOG("moves #"_f);
 	LOGLN(moves.size());
 	for (uint16_t idx = _branchingMove; idx < moves.size(); ++idx) {
@@ -216,6 +216,7 @@ const bool GSResolver::update(const std::vector<ChessPieceLocation>& changes) {
 	GSNode* curBranch = _heads[0];
 	if (!curBranch) { DLOGLN("Unexpected nullptr in current branch!"_f); return false; }
 
+	_moveLocations.push_back(pos);
 	if (piece.isValid()) { // piece disappeared from the board
 		curBranch->take(pos);
 		return true;

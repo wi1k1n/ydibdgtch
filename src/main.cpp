@@ -20,8 +20,9 @@ const String PACKETS_INCOME[] = {
 	"98716453", 	// 2	updboard
 };
 struct PACKETS_OUTCOME {
-	const String setfen = 			"42751315";
+	const static String setfen;
 };
+const String PACKETS_OUTCOME::setfen = 		"42751315";
 
 const size_t SERIALBUFFERSIZE = 127;
 char serialBuffer[SERIALBUFFERSIZE + 1];
@@ -106,11 +107,10 @@ void Application::communicateSerial() {
 				// 	LOG(" => "_f);
 				// 	LOGLN(entry.second.toString());
 				// }
-				LOGLN("New resolved state: "_f);
-				LOGLN(currentResolvedState.toString());
-				if (!resolver.init(engine, ChessGameState(msg))) 
+				if (!resolver.init(engine, currentResolvedState)) 
 					DLOGLN("Couldn't init resolver!"_f);
-				currentResolvedState = resolver.getGameState();
+				LOGLN("New resolved state: "_f);
+				LOGLN(resolver.getGameState().toString());
 				break;
 			}
 			case 1: { // setboard
@@ -186,7 +186,7 @@ bool Application::tick() {
 		board.scan();
 
 	if (debouncer.tick(board.getState())) { // if there was a change
-		board.print();
+		// board.print();
 		bool success = resolver.update(debouncer.getChanges());
 		// LOGLN(resolveInfo.toString());
 		currentResolvedState = resolver.getGameState();
@@ -194,8 +194,10 @@ bool Application::tick() {
 			DLOGLN("Got Undefined game state!");
 		} else {
 			// comm.send(currentResolvedState.toFEN());
-			LOGLN(currentResolvedState.toFEN());
+			// LOGLN(currentResolvedState.toFEN());
+			DLOGLN();
 			LOGLN(currentResolvedState.toString());
+			sendPacket(PACKETS_OUTCOME::setfen, currentResolvedState.toFEN());
 		}
 		// LOG("IsUnique: "_f); LOGLN(resolver.IsCurrentStateUnique());
 		// LOG("IsIntermediate: "_f); LOGLN(resolver.IsCurrentStateIntermediate());
