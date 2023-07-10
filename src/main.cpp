@@ -18,11 +18,14 @@ const String PACKETS_INCOME[] = {
 	"93379838", 	// 0	setfen
 	"70988515",	 	// 1	setboard
 	"98716453", 	// 2	updboard
+	"77990544", 	// 3 	getfen
 };
 struct PACKETS_OUTCOME {
 	const static String setfen;
+	const static String getfen_r; // getfen
 };
 const String PACKETS_OUTCOME::setfen = 		"42751315";
+const String PACKETS_OUTCOME::getfen_r = 	"77990544";
 
 const size_t SERIALBUFFERSIZE = 127;
 char serialBuffer[SERIALBUFFERSIZE + 1];
@@ -133,6 +136,10 @@ void Application::communicateSerial() {
 					for (uint8_t i = 0; i < 64; ++i)
 						board.setState(i, msg[i] == '1');
 				}
+				break;
+			}
+			case 3: { // getfen
+				sendPacket(PACKETS_OUTCOME::getfen_r, resolver.getGameState().toFEN());
 				break;
 			}
 		}

@@ -1,10 +1,12 @@
 const PACKETS_INCOME = {
 	'42751315': (m) => { console.log('setfen: ', m); board.position(m); }, // setfen
+	'77990544': (m) => { console.log(m); }, // getfen_r
 };
 const PACKETS_OUTCOME = {
 	'setfen': 			['93379838', (m)=>{ console.log('setfen: ', m); }],
 	'setboard': 		['70988515', (m)=>{ console.log('setboard: ', m); }],
 	'updboard': 		['98716453', (m)=>{ console.log('updboard: ', m); }],
+	'getfen': 			['77990544', (m)=>{ console.log(m); }],
 };
 
 const BAUD_RATE = 115200;
@@ -177,6 +179,9 @@ document.getElementById('btnSend').addEventListener('click', async function(evt)
 document.getElementById('btnSendInitialization').addEventListener('click', async function(evt) {
 	await sendBoardFen();
 	await sendSetBoardState();
+});
+document.getElementById('btnRequestCurrentFen').addEventListener('click', async function(evt) {
+	await sendSerialPacket(PACKETS_OUTCOME['getfen'][0], '');
 });
 
 

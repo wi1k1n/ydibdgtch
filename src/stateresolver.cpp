@@ -150,6 +150,10 @@ ChessGameState GSNode::evaluateGameState() const {
 			continue;
 		}
 		// piece appeared on the board
+		if (!buffer.size()) {
+			DLOGLN("buffer is empty!"_f);
+			continue;
+		}
 		if (buffer.size() > 1) // TODO: no takes for now
 			DLOGLN("buffer size > 1");
 		currentState.set(curMovePos, buffer[0]);
