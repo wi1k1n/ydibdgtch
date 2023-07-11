@@ -46,7 +46,7 @@ crossorigin="anonymous">
       <select name="slFens" id="slFens">
         <option value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Start</option>
         <option value="8/8/8/8/8/8/8/8 w - - 0 1">Clean</option>
-        <option value="k1K5/8/8/8/2b5/3n4/1N6/8 w - - 1 1">Ambiguity</option>
+        <option value="k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1" selected>Ambiguity</option>
         <option value="r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R">Ruy Lopez</option>
       </select>
       <input type="text" id="txbxFen" name="txbxFen", style="width: 500px">
@@ -63,8 +63,9 @@ crossorigin="anonymous">
 
     <script type="text/javascript">
       const BOARDSIZE = 630;
-      const INITIAL_FEN = 'k1K5/8/8/8/2b5/3n4/1N6/8 w - - 1 1';
+      // const INITIAL_FEN = 'k1K5/8/8/8/2b5/3n4/1N6/8 w - - 1 1';
       // const INITIAL_FEN = 'r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R';
+      const INITIAL_FEN = document.getElementById('slFens').value;
 
       // https://chessboardjs.com/
       // NOTE: this example uses the chess.js library:

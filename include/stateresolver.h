@@ -122,18 +122,20 @@ class GSResolver;
 class GSNode {
 	GSResolver* _resolver = nullptr;
 	GSNode* _parent = nullptr; // weak ref
+
 	std::vector<GSNode*> _children; // strong refs
-	uint16_t _branchingMove = 0;
-	ChessGameState _initialState;
-	std::vector<ChessPiece> _buffer;
+
+	uint16_t _branchingMove = 0; // index of the move in _resolver->_moveLocations, that caused branching
+	ChessGameState _initialState; // game state at the beginning of branch
+	std::vector<std::tuple<ChessPieceLocation, ChessPiece>> _buffer; // buffer to keep taken pieces in
+	// std::vector<AdditionalMoveData> _moveLocationsInfo;
 public:
 	GSNode() = default;
 	GSNode(GSResolver* resolver, GSNode* parent, uint16_t branchingMove, const ChessGameState& init);
 	GSNode(const GSNode& other);
 	~GSNode();
 
-	void take(ChessPieceLocation pos); // piece disappeared from the board
-	void put(ChessPieceLocation pos); // piece appeared on the board
+	bool update(ChessPieceLocation pos);
 
 	ChessGameState evaluateGameState() const;
 private:
@@ -150,7 +152,9 @@ public:
 	// TODO: Need a function to manually set up current game state!
 	bool init(const ChessRulesEngine& rules, const ChessGameState& initState);
 	const bool update(const std::vector<ChessPieceLocation>& changes);
+
 	ChessGameState getGameState(uint8_t idx = 0) const;
+	const ChessRulesEngine* getRulesEngine() const { return _rules; }
 	const std::vector<ChessPieceLocation>& getMoves() const { return _moveLocations; }
 private:
 	// const GSResolverInfo& invalidateInfo() { _info = {true, false, false}; return _info; }

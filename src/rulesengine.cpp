@@ -484,7 +484,7 @@ bool ClassicChessRules::isCheck(const ChessGameState& state, CHESSCOLOR color) c
 		// 	LOG(move.toString() + " ");
 		// LOG(";");
 		for (const auto& move : takeMoves)
-			if (static_cast<ChessMoveLocation>(move) == locKing) {
+			if (static_cast<ChessPieceLocation>(move) == locKing) {
 				// DLOGLN("TRUE");
 				return true;
 			}

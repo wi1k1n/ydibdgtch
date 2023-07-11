@@ -98,7 +98,10 @@ struct ChessMoveLocation : public ChessPieceLocation {
 	ChessMoveLocation(const ChessMoveLocation& piece) : ChessPieceLocation(piece), _take(piece._take) { }
 	ChessMoveLocation(int8_t row, int8_t col, bool take = false) : ChessPieceLocation(row, col), _take(take) { }
 	ChessMoveLocation(std::pair<int8_t, int8_t> pair, bool take = false) : ChessPieceLocation(pair), _take(take) { }
+	
 	bool isTaking() const { return _take; }
+	
+	bool operator==(const ChessMoveLocation& other) const { return _row == other._row && _col == other._col && _take == other._take; }
 };
 
 namespace std {

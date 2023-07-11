@@ -105,41 +105,116 @@ GSNode::~GSNode() {
 		delete child;
 }
 
-void GSNode::take(ChessPieceLocation pos) {
-	LOG("GSN-"_f); LOG(String(reinterpret_cast<uint32_t>(this), HEX)); LOG(" "_f);
-
-	ChessGameState state = evaluateGameState();
-	// LOGLN(state.toString());
-	ChessPiece piece = state.at(pos);
-	if (!piece.isValid()) {
-		LOG("! Take operation: no piece at "_f); LOGLN(pos.toString());
-		return;
+static std::vector<ChessMoveLocation> getValidMovesResultingInTakingPiece(const ChessGameState& state, ChessPieceLocation pos, const ChessRulesEngine& rules) {
+	std::vector<ChessMoveLocation> moves;
+	ChessPiece chessPiece = state.at(pos);
+	CHESSPIECE piece = chessPiece.getPiece();
+	CHESSCOLOR clr = chessPiece.getColor();
+	CHESSCOLOR clrOpposite = chessPiece.getColorOpposite();
+	if (piece == CHESSPIECE::UNKNOWN || clr == CHESSCOLOR::UNKNOWN) {
+		return moves;
 	}
-	_buffer.push_back(piece);
-	LOG("taken piece "_f); LOG(piece.toString()); LOG(" from "_f); LOGLN(pos.toString());
+	const std::unordered_map<ChessPieceLocation, ChessPiece>& pieces = state.getPieces();
+	for (const auto& pieceEntry : pieces) { // for each piece of the opposite color
+		if (pieceEntry.second.getColor() != clrOpposite)
+			continue;
+		std::vector<ChessMoveLocation> curMoves = rules.getValidMovesForPiece(state, pieceEntry.first);
+		for (const auto& m : curMoves) { // collect taking moves that result in given pos
+			if (static_cast<ChessPieceLocation>(m) == pos && m.isTaking())
+				moves.push_back(m);
+		}
+	}
+	return moves;
 }
 
-void GSNode::put(ChessPieceLocation pos) {
+bool  GSNode::update(ChessPieceLocation pos) {
 	LOG("GSN-"_f); LOG(String(reinterpret_cast<uint32_t>(this), HEX)); LOG(" "_f);
+
+	if (!_resolver) {
+		DLOGLN("_resolver is nulltpr!"_f);
+		return false;
+	}
+	const ChessRulesEngine* enginePtr = _resolver->getRulesEngine();
+	if (!enginePtr) {
+		DLOGLN("rules enginePtr is nullptr!"_f);
+		return false;
+	}
+	const ChessRulesEngine& engine = *enginePtr;
 	ChessGameState state = evaluateGameState();
-	// DLOGLN(state.toString());
+	CHESSCOLOR colorToMove = state.getColorToMove();
+	if (colorToMove == CHESSCOLOR::UNKNOWN) {
+		DLOGLN("color to move is undefined, cannot validate moves!"_f);
+	}
 	ChessPiece piece = state.at(pos);
+
+	// ------------------------------
+	// Piece is there, take operation
 	if (piece.isValid()) {
-		LOG("! Put operation: there's a piece "_f); LOG(piece.toString()); LOG(" at "_f); LOGLN(pos.toString());
-		return;
+		if (piece.getColor() == colorToMove) { // taken piece of the same color
+			std::vector<ChessMoveLocation> validMoves = engine.getValidMovesForPiece(state, pos);
+			if (validMoves.empty()) {
+				DLOGLN("this piece doesn't have valid moves and shouldn't be taken"_f);
+				return false;
+			}
+		} else { // taken piece of the opposite color
+			std::vector<ChessMoveLocation> validTakeMoves = getValidMovesResultingInTakingPiece(state, pos, engine);
+			if (validTakeMoves.empty()) {
+				DLOGLN("this piece cannot be taken and shouldn't be taken"_f);
+				return false;
+			}
+		}
+		_buffer.push_back(std::make_tuple(pos, piece));
+		LOG("taken piece "_f); LOG(piece.toString()); LOG(" from "_f); LOGLN(pos.toString());
+		return true;
 	}
-	if (!_buffer.size()) {
-		LOG("! Put operation: _buffer's empty "_f);
-		return;
+
+	// ------------------------------
+	// No piece at pos, put operation
+	if (_buffer.empty()) {
+		DLOGLN("buffer is empty! Couldn't make put operation!"_f);
+		return false;
 	}
+	// if (_buffer.size() > 1) {
+	// 	DLOGLN("more than 1 piece in buffer! Need rules resolution!"_f);
+	// }
+	const std::vector<ChessPieceLocation>& moves = _resolver->getMoves();
+	if (moves.empty()) {
+		DLOGLN("moves is empty, didn't expect this!"_f);
+		return false;
+	}
+
+	if (_buffer.size() == 1) { // single piece in buffer, regular piece movement
+		// Simulate this move in a separate game state
+		ChessPieceLocation bufPieceFrom; ChessPiece bufPiece;
+		std::tie(bufPieceFrom, bufPiece) = _buffer.front();
+		
+		ChessGameState curState = state;
+		curState.set(bufPieceFrom, bufPiece);
+		std::vector<ChessMoveLocation> validMoves = engine.getValidMovesForPiece(curState, bufPieceFrom);
+		bool validMoveFound = false;
+		for (const auto& curMove : validMoves) {
+			if (static_cast<ChessPieceLocation>(curMove) == pos && !curMove.isTaking()) {
+				validMoveFound = true;
+				break;
+			}
+		}
+		if (!validMoveFound) {
+			DLOGLN("no valid move found! (could be intermediate?)"_f);
+			return false;
+		}
+		// valid move found, switch turn
+	}
+
+	LOG("put piece "_f); LOG(std::get<1>(_buffer[_buffer.size() - 1]).toString()); LOG(" to "_f); LOGLN(pos.toString());
 	_buffer.pop_back();
+	return true;
 }
 
 ChessGameState GSNode::evaluateGameState() const {
 	ChessGameState currentState = _initialState;
 	const std::vector<ChessPieceLocation>& moves = _resolver->getMoves();
 	std::vector<ChessPiece> buffer;
-	DLOG("moves #"_f);
+	// DLOG("moves #"_f);
 	LOGLN(moves.size());
 	for (uint16_t idx = _branchingMove; idx < moves.size(); ++idx) {
 		ChessPieceLocation curMovePos = moves[idx];
@@ -196,40 +271,20 @@ const bool GSResolver::update(const std::vector<ChessPieceLocation>& changes) {
 	// DLOGLN("update()"_f);
 	if (changes.empty())
 		return true;
-	
-	// for (uint8_t i = 0;; ++i) {
-	// 	const GSBranch* branch = _tree.getBranch(i);
-	// 	if (!branch)
-	// 		break;
-	// }
-
-	// TODO: start with a single branch, should be able to validate changes for all branches
-	if (_heads.size() > 1) { LOGLN("More than 1 branches aren't supported yet"_f); return true; }
-	
 	// TODO: Start with an atomic changes, should be able to process complex as well
 	if (changes.size() > 1) { LOGLN("More than 1 change isn't supported yet"_f); return true; }
+	
+	// TODO: start with a single branch, should be able to validate changes for all branches
+	if (_heads.size() > 1) { LOGLN("More than 1 branches aren't supported yet"_f); return true; }
 
 	ChessPieceLocation pos = changes.at(0);	
-	ChessGameState state = getGameState(0);
-	ChessPiece piece = state.at(pos);
-
-	// LOG(piece.toString());
-	// LOG(" at "_f);
-	// LOGLN(pos.toString());
 
 	GSNode* curBranch = _heads[0];
 	if (!curBranch) { DLOGLN("Unexpected nullptr in current branch!"_f); return false; }
+	curBranch->update(pos);
 
 	_moveLocations.push_back(pos);
-	if (piece.isValid()) { // piece disappeared from the board
-		curBranch->take(pos);
-		return true;
-	}
-
-	// piece appeared on the board
-	curBranch->put(pos);
 	
-
 	// TODO: prune subtree
 	return true;
 }
