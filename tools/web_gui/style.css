@@ -91,8 +91,9 @@
 	text-align: center;
 	font-style: normal;
 	/* width: 100%; */
-	border: 1px solid #16a085;
-	border-width: 1px 1px 3px;
+	/* border: 1px solid #868686; */
+	border: none;
+	/* border-width: 1px 1px 3px; */
 	margin-bottom: 10px;
 }
 .form-style-5 input[type="submit"]:hover,
@@ -100,4 +101,20 @@
 .form-style-5 button:hover
 {
 	background: #109177;
+}
+
+input[type="submit"].btn-warn,
+input[type="button"].btn-warn,
+button.btn-warn
+{
+	background: #f1c241;
+	color: #5e3d13;
+}
+
+input[type="submit"].btn-warn:hover,
+input[type="button"].btn-warn:hover,
+button.btn-warn:hover
+{
+	background: #c78d41;
+	color: #FFF;
 }
