@@ -446,6 +446,15 @@ bool ChessGameState::makeMove(const ChessMove& move) {
 	return true;
 }
 
+void ChessGameState::nextTurn() {
+	if (_colorToMove == CHESSCOLOR::WHITE) {
+		_colorToMove = CHESSCOLOR::BLACK;
+		return;
+	}
+	if (_colorToMove == CHESSCOLOR::BLACK)
+		_colorToMove = CHESSCOLOR::WHITE;
+}
+
 ChessPieceLocation ChessGameState::findFirst(CHESSPIECE piece, CHESSCOLOR color) const {
 	for (const auto& entry : _pieces)
 		if (entry.second.getPiece() == piece && entry.second.getColor() == color)

@@ -118,6 +118,12 @@ struct GSResolverInfo {
 	}
 };
 
+// struct AdditionalMoveData {
+// 	uint8_t currentClr : 2; // 0 - white, 1 - black, 2 - could be both
+// 	uint8_t isValid : 1; // 0 - this move leads to invalid state, 1 - after this move gamestate is valid
+// 	uint8_t isIntermediate : 1; // 0 - this move couldn't be considered as intermediate, 1 - same color can continue making moves
+// };
+
 class GSResolver;
 class GSNode {
 	GSResolver* _resolver = nullptr;
@@ -125,19 +131,18 @@ class GSNode {
 
 	std::vector<GSNode*> _children; // strong refs
 
-	uint16_t _branchingMove = 0; // index of the move in _resolver->_moveLocations, that caused branching
-	ChessGameState _initialState; // game state at the beginning of branch
-	std::vector<std::tuple<ChessPieceLocation, ChessPiece>> _buffer; // buffer to keep taken pieces in
-	// std::vector<AdditionalMoveData> _moveLocationsInfo;
+	ChessGameState _state;
+	std::vector<std::pair<ChessPieceLocation, ChessPiece>> _buffer; // represents player's hands
 public:
 	GSNode() = default;
-	GSNode(GSResolver* resolver, GSNode* parent, uint16_t branchingMove, const ChessGameState& init);
+	GSNode(GSResolver* resolver, GSNode* parent, const ChessGameState& init);
 	GSNode(const GSNode& other);
 	~GSNode();
 
 	bool update(ChessPieceLocation pos);
 
-	ChessGameState evaluateGameState() const;
+	// ChessGameState evaluateGameState() const;
+	const ChessGameState& getGameState() const { return _state; }
 private:
 };
 

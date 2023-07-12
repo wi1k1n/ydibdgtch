@@ -147,6 +147,7 @@ public:
 	void unset(const String& location);
 
 	bool makeMove(const ChessMove& move);
+	void nextTurn();
 
 	ChessPieceLocation findFirst(CHESSPIECE piece, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
 	ChessPieceLocation findFirst(const ChessPiece& piece) const;
