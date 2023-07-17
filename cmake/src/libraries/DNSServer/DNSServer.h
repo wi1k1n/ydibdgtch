@@ -72,10 +72,10 @@
 //   uint16_t  QClass ; 
 // } ; 
 
-// class DNSServer
-// {
-//   public:
-//     DNSServer();
+class DNSServer
+{
+  public:
+    DNSServer();
 //     void processNextRequest();
 //     void setErrorReplyCode(const DNSReplyCode &replyCode);
 //     void setTTL(const uint32_t &ttl);
@@ -105,5 +105,5 @@
 //     bool requestIncludesOnlyOneQuestion();
 //     void replyWithIP();
 //     void replyWithCustomCode();
-// };
+};
 #endif

@@ -5,6 +5,8 @@
 
 #include "constants.h"
 
+#include <vector>
+
 //-----------------------------------------------------------------------------------------
 /// @brief The interface class for the lower application level of communication interfaces (e.g. Serial, WiFi, Bluetooth, etc)
 class CommunicationInterface {

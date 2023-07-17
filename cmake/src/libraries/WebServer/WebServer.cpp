@@ -21,12 +21,12 @@
 // */
 
 
-// #include <Arduino.h>
+#include <Arduino.h>
 // #include <esp32-hal-log.h>
 // #include <libb64/cencode.h>
-// #include "WiFiServer.h"
+#include "WiFiServer.h"
 // #include "WiFiClient.h"
-// #include "WebServer.h"
+#include "WebServer.h"
 // #include "FS.h"
 // #include "detail/RequestHandlersImpl.h"
 // #include "mbedtls/md5.h"
@@ -39,7 +39,7 @@
 // static const char Content_Length[] = "Content-Length";
 
 
-// WebServer::WebServer(IPAddress addr, int port)
+WebServer::WebServer(IPAddress addr, int port)
 // : _corsEnabled(false)
 // , _server(addr, port)
 // , _currentMethod(HTTP_ANY)
@@ -58,10 +58,10 @@
 // , _currentHeaders(nullptr)
 // , _contentLength(0)
 // , _chunked(false)
-// {
-// }
+{
+}
 
-// WebServer::WebServer(int port)
+WebServer::WebServer(int port)
 // : _corsEnabled(false)
 // , _server(port)
 // , _currentMethod(HTTP_ANY)
@@ -80,10 +80,10 @@
 // , _currentHeaders(nullptr)
 // , _contentLength(0)
 // , _chunked(false)
-// {
-// }
+{
+}
 
-// WebServer::~WebServer() {
+WebServer::~WebServer() {
 //   _server.close();
 //   if (_currentHeaders)
 //     delete[]_currentHeaders;
@@ -93,7 +93,7 @@
 //     delete handler;
 //     handler = next;
 //   }
-// }
+}
 
 // void WebServer::begin() {
 //   close();
