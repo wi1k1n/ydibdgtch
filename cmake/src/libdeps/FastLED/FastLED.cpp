@@ -1,5 +1,5 @@
 // #define FASTLED_INTERNAL
-// #include "FastLED.h"
+#include "FastLED.h"
 
 
 // #if defined(__SAM3X8E__)
@@ -10,7 +10,7 @@
 
 // void *pSmartMatrix = NULL;
 
-// CFastLED FastLED;
+CFastLED FastLED;
 
 // CLEDController *CLEDController::m_pHead = NULL;
 // CLEDController *CLEDController::m_pTail = NULL;
@@ -21,47 +21,47 @@
 
 // // uint32_t CRGB::Squant = ((uint32_t)((__TIME__[4]-'0') * 28))<<16 | ((__TIME__[6]-'0')*50)<<8 | ((__TIME__[7]-'0')*28);
 
-// CFastLED::CFastLED() {
-// 	// clear out the array of led controllers
-// 	// m_nControllers = 0;
-// 	m_Scale = 255;
-// 	m_nFPS = 0;
-// 	m_pPowerFunc = NULL;
-// 	m_nPowerData = 0xFFFFFFFF;
-// }
+CFastLED::CFastLED() {
+	// // clear out the array of led controllers
+	// // m_nControllers = 0;
+	// m_Scale = 255;
+	// m_nFPS = 0;
+	// m_pPowerFunc = NULL;
+	// m_nPowerData = 0xFFFFFFFF;
+}
 
-// CLEDController &CFastLED::addLeds(CLEDController *pLed,
-// 								  struct CRGB *data,
-// 								  int nLedsOrOffset, int nLedsIfOffset) {
-// 	int nOffset = (nLedsIfOffset > 0) ? nLedsOrOffset : 0;
-// 	int nLeds = (nLedsIfOffset > 0) ? nLedsIfOffset : nLedsOrOffset;
+CLEDController &CFastLED::addLeds(CLEDController *pLed,
+								  struct CRGB *data,
+								  int nLedsOrOffset, int nLedsIfOffset) {
+	// int nOffset = (nLedsIfOffset > 0) ? nLedsOrOffset : 0;
+	// int nLeds = (nLedsIfOffset > 0) ? nLedsIfOffset : nLedsOrOffset;
 
-// 	pLed->init();
-// 	pLed->setLeds(data + nOffset, nLeds);
-// 	FastLED.setMaxRefreshRate(pLed->getMaxRefreshRate(),true);
-// 	return *pLed;
-// }
+	// pLed->init();
+	// pLed->setLeds(data + nOffset, nLeds);
+	// FastLED.setMaxRefreshRate(pLed->getMaxRefreshRate(),true);
+	// return *pLed;
+}
 
-// void CFastLED::show(uint8_t scale) {
-// 	// guard against showing too rapidly
-// 	while(m_nMinMicros && ((micros()-lastshow) < m_nMinMicros));
-// 	lastshow = micros();
+void CFastLED::show(uint8_t scale) {
+	// // guard against showing too rapidly
+	// while(m_nMinMicros && ((micros()-lastshow) < m_nMinMicros));
+	// lastshow = micros();
 
-// 	// If we have a function for computing power, use it!
-// 	if(m_pPowerFunc) {
-// 		scale = (*m_pPowerFunc)(scale, m_nPowerData);
-// 	}
+	// // If we have a function for computing power, use it!
+	// if(m_pPowerFunc) {
+	// 	scale = (*m_pPowerFunc)(scale, m_nPowerData);
+	// }
 
-// 	CLEDController *pCur = CLEDController::head();
-// 	while(pCur) {
-// 		uint8_t d = pCur->getDither();
-// 		if(m_nFPS < 100) { pCur->setDither(0); }
-// 		pCur->showLeds(scale);
-// 		pCur->setDither(d);
-// 		pCur = pCur->next();
-// 	}
-// 	countFPS();
-// }
+	// CLEDController *pCur = CLEDController::head();
+	// while(pCur) {
+	// 	uint8_t d = pCur->getDither();
+	// 	if(m_nFPS < 100) { pCur->setDither(0); }
+	// 	pCur->showLeds(scale);
+	// 	pCur->setDither(d);
+	// 	pCur = pCur->next();
+	// }
+	// countFPS();
+}
 
 // int CFastLED::count() {
 //     int x = 0;

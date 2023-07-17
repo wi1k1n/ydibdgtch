@@ -5,7 +5,7 @@
 
 // #include <stdint.h>
 // #include "lib8tion.h"
-// #include "color.h"
+#include "color.h"
 
 // FASTLED_NAMESPACE_BEGIN
 
@@ -85,8 +85,8 @@ struct CHSV;
 //     HUE_PINK = 224
 // } HSVHue;
 
-// /// Representation of an RGB pixel (Red, Green, Blue)
-// struct CRGB {
+/// Representation of an RGB pixel (Red, Green, Blue)
+struct CRGB {
 // 	union {
 // 		struct {
 //             union {
@@ -743,7 +743,7 @@ struct CHSV;
 //         FairyLightNCC=0xFF9D2A
 
 //     } HTMLColorCode;
-// };
+};
 
 
 // inline __attribute__((always_inline)) bool operator== (const CRGB& lhs, const CRGB& rhs)
@@ -846,17 +846,17 @@ struct CHSV;
 
 
 
-// /// RGB orderings, used when instantiating controllers to determine what
-// /// order the controller should send RGB data out in, RGB being the default
-// /// ordering.
-// enum EOrder {
-// 	RGB=0012,
-// 	RBG=0021,
-// 	GRB=0102,
-// 	GBR=0120,
-// 	BRG=0201,
-// 	BGR=0210
-// };
+/// RGB orderings, used when instantiating controllers to determine what
+/// order the controller should send RGB data out in, RGB being the default
+/// ordering.
+enum EOrder {
+	RGB=0012,
+	RBG=0021,
+	GRB=0102,
+	GBR=0120,
+	BRG=0201,
+	BGR=0210
+};
 
 // FASTLED_NAMESPACE_END
 // ///@}

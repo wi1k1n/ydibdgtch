@@ -1,3 +1,4 @@
+#if 0 // temporary disabled because of emulation errors
 #include "wifiinterface.h"
 
 DNSServer WiFiManager::_dnsServer;
@@ -134,3 +135,4 @@ void WiFiManager::_handleWebNotFound() {
 	
 	_webServer.client().stop();
 }
+#endif // if 0

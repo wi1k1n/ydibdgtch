@@ -1,6 +1,8 @@
 #ifndef WIFIINTERFACE_H__
 #define WIFIINTERFACE_H__
 
+#if 0 // temporary disabled because of emulation errors
+
 #include "constants.h"
 
 #include <Arduino.h>
@@ -29,5 +31,7 @@ public:
 	bool init();
 	void tick();
 };
+
+#endif // if 0
 
 #endif // WIFIINTERFACE_H__

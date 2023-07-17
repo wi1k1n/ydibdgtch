@@ -33,6 +33,7 @@ target_include_directories(ydibgtch PUBLIC "${PROJECT_SOURCE_DIR}/../include")
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libraries\DNSServer
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libraries\EEPROM
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\tools\sdk\include\mdns
+# D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\tools\sdk\include\driver
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libdeps\FastLED
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libdeps\VirtualButton
 

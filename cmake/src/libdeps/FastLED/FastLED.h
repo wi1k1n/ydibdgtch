@@ -46,7 +46,7 @@
 // #include "fastled_delay.h"
 // #include "bitswap.h"
 
-// #include "controller.h"
+#include "controller.h"
 // #include "fastpin.h"
 // #include "fastspi_types.h"
 // #include "dmx.h"
@@ -173,34 +173,34 @@
 
 // typedef uint8_t (*power_func)(uint8_t scale, uint32_t data);
 
-// /// High level controller interface for FastLED.  This class manages controllers, global settings and trackings
-// /// such as brightness, and refresh rates, and provides access functions for driving led data to controllers
-// /// via the show/showColor/clear methods.
-// /// @nosubgrouping
-// class CFastLED {
-// 	// int m_nControllers;
-// 	uint8_t  m_Scale; 				///< The current global brightness scale setting
-// 	uint16_t m_nFPS;					///< Tracking for current FPS value
-// 	uint32_t m_nMinMicros;		///< minimum µs between frames, used for capping frame rates.
-// 	uint32_t m_nPowerData;		///< max power use parameter
-// 	power_func m_pPowerFunc;	///< function for overriding brightness when using FastLED.show();
+/// High level controller interface for FastLED.  This class manages controllers, global settings and trackings
+/// such as brightness, and refresh rates, and provides access functions for driving led data to controllers
+/// via the show/showColor/clear methods.
+/// @nosubgrouping
+class CFastLED {
+	// // int m_nControllers;
+	// uint8_t  m_Scale; 				///< The current global brightness scale setting
+	// uint16_t m_nFPS;					///< Tracking for current FPS value
+	// uint32_t m_nMinMicros;		///< minimum µs between frames, used for capping frame rates.
+	// uint32_t m_nPowerData;		///< max power use parameter
+	// power_func m_pPowerFunc;	///< function for overriding brightness when using FastLED.show();
 
-// public:
-// 	CFastLED();
+public:
+	CFastLED();
 
 
-// 	/// Add a CLEDController instance to the world.  Exposed to the public to allow people to implement their own
-// 	/// CLEDController objects or instances.  There are two ways to call this method (as well as the other addLeds)
-// 	/// variations.  The first is with 3 arguments, in which case the arguments are the controller, a pointer to
-// 	/// led data, and the number of leds used by this controller.  The second is with 4 arguments, in which case
-// 	/// the first two arguments are the same, the third argument is an offset into the CRGB data where this controller's
-// 	/// CRGB data begins, and the fourth argument is the number of leds for this controller object.
-// 	/// @param pLed - the led controller being added
-// 	/// @param data - base point to an array of CRGB data structures
-// 	/// @param nLedsOrOffset - number of leds (3 argument version) or offset into the data array
-// 	/// @param nLedsIfOffset - number of leds (4 argument version)
-// 	/// @returns a reference to the added controller
-// 	static CLEDController &addLeds(CLEDController *pLed, struct CRGB *data, int nLedsOrOffset, int nLedsIfOffset = 0);
+	/// Add a CLEDController instance to the world.  Exposed to the public to allow people to implement their own
+	/// CLEDController objects or instances.  There are two ways to call this method (as well as the other addLeds)
+	/// variations.  The first is with 3 arguments, in which case the arguments are the controller, a pointer to
+	/// led data, and the number of leds used by this controller.  The second is with 4 arguments, in which case
+	/// the first two arguments are the same, the third argument is an offset into the CRGB data where this controller's
+	/// CRGB data begins, and the fourth argument is the number of leds for this controller object.
+	/// @param pLed - the led controller being added
+	/// @param data - base point to an array of CRGB data structures
+	/// @param nLedsOrOffset - number of leds (3 argument version) or offset into the data array
+	/// @param nLedsIfOffset - number of leds (4 argument version)
+	/// @returns a reference to the added controller
+	static CLEDController &addLeds(CLEDController *pLed, struct CRGB *data, int nLedsOrOffset, int nLedsIfOffset = 0);
 
 // 	/// @name Adding SPI based controllers
 //   //@{
@@ -477,9 +477,11 @@
 // 	//@}
 // #endif
 
-// 	/// Set the global brightness scaling
-// 	/// @param scale a 0-255 value for how much to scale all leds before writing them out
-// 	void setBrightness(uint8_t scale) { m_Scale = scale; }
+	/// Set the global brightness scaling
+	/// @param scale a 0-255 value for how much to scale all leds before writing them out
+	void setBrightness(uint8_t scale) {
+		// m_Scale = scale;
+	}
 
 // 	/// Get the current global brightness setting
 // 	/// @returns the current global brightness value
@@ -494,12 +496,14 @@
 // 	/// @param milliwatts - the max power draw desired, in milliwatts
 // 	inline void setMaxPowerInMilliWatts(uint32_t milliwatts) { m_pPowerFunc = &calculate_max_brightness_for_power_mW; m_nPowerData = milliwatts; }
 
-// 	/// Update all our controllers with the current led colors, using the passed in brightness
-// 	/// @param scale temporarily override the scale
-// 	void show(uint8_t scale);
+	/// Update all our controllers with the current led colors, using the passed in brightness
+	/// @param scale temporarily override the scale
+	void show(uint8_t scale);
 
-// 	/// Update all our controllers with the current led colors
-// 	void show() { show(m_Scale); }
+	/// Update all our controllers with the current led colors
+	void show() {
+		// show(m_Scale);
+	}
 
 // 	/// clear the leds, wiping the local array of data, optionally black out the leds as well
 // 	/// @param writeData whether or not to write out to the leds as well
@@ -572,7 +576,7 @@
 // 	/// Get a pointer to led data for the first controller
 // 	/// @returns pointer to the CRGB buffer for the first controller
 // 	CRGB *leds() { return (*this)[0].leds(); }
-// };
+};
 
 // #define FastSPI_LED FastLED
 // #define FastSPI_LED2 FastLED
@@ -580,7 +584,7 @@
 // #define LEDS FastLED
 // #endif
 
-// extern CFastLED FastLED;
+extern CFastLED FastLED;
 
 // // Warnings for undefined things
 // #ifndef HAS_HARDWARE_PIN_SUPPORT
