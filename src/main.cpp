@@ -223,6 +223,7 @@ bool Application::tick() {
 	if (tmrLedsUpdate.tick()) {
 		leds.showLEDs(setLEDColor);
 	}
+	return true;
 }
 
 Application app;

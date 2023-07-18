@@ -69,6 +69,8 @@ struct ChessPieceLocation {
 		: _row(idx / 8), _col(idx % 8) { }
 	ChessPieceLocation(int8_t row, int8_t col)
 		: _row(row), _col(col) { }
+	ChessPieceLocation(uint8_t row, uint8_t col)
+		: _row(static_cast<int8_t>(row)), _col(static_cast<int8_t>(col)) { }
 	ChessPieceLocation(std::pair<int8_t, int8_t> pair)
 		: _row(pair.first), _col(pair.second) { }
 	ChessPieceLocation(const ChessPieceLocation& piece) {

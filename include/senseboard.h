@@ -24,6 +24,7 @@ struct SenseBoardState
 	bool get(uint8_t row, uint8_t col) const { return (_rows[row] >> col) & 1u; }
 	bool set(uint8_t row, uint8_t col, bool val) {
 		_rows[row] ^= (-static_cast<uint8_t>(val) ^ _rows[row]) & (1u << col);
+		return true;
 	}
 
 	std::vector<ChessPieceLocation> operator-(const SenseBoardState& other) const {
