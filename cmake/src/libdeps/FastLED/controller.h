@@ -130,17 +130,29 @@ public:
     // /// get the dithering option currently set for this controller
     // inline uint8_t getDither() { return m_DitherMode; }
 
-   // /// the the color corrction to use for this controller, expressed as an rgb object
-    // CLEDController & setCorrection(CRGB correction) { m_ColorCorrection = correction; return *this; }
-    // /// set the color correction to use for this controller
-    // CLEDController & setCorrection(LEDColorCorrection correction) { m_ColorCorrection = correction; return *this; }
-    // /// get the correction value used by this controller
+   /// the the color corrction to use for this controller, expressed as an rgb object
+    CLEDController & setCorrection(CRGB correction) {
+        // m_ColorCorrection = correction;
+        return *this;
+    }
+    /// set the color correction to use for this controller
+    CLEDController & setCorrection(LEDColorCorrection correction) {
+        // m_ColorCorrection = correction;
+        return *this;
+    }
+    /// get the correction value used by this controller
     // CRGB getCorrection() { return m_ColorCorrection; }
 
-   // /// set the color temperature, aka white point, for this controller
-    // CLEDController & setTemperature(CRGB temperature) { m_ColorTemperature = temperature; return *this; }
-    // /// set the color temperature, aka white point, for this controller
-    // CLEDController & setTemperature(ColorTemperature temperature) { m_ColorTemperature = temperature; return *this; }
+   /// set the color temperature, aka white point, for this controller
+    CLEDController & setTemperature(CRGB temperature) {
+        // m_ColorTemperature = temperature;
+        return *this;
+    }
+    /// set the color temperature, aka white point, for this controller
+    CLEDController & setTemperature(ColorTemperature temperature) {
+        // m_ColorTemperature = temperature;
+        return *this;
+    }
     // /// get the color temperature, aka whipe point, for this controller
     // CRGB getTemperature() { return m_ColorTemperature; }
 

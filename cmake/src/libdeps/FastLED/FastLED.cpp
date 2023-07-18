@@ -134,21 +134,21 @@ void CFastLED::show(uint8_t scale) {
 // 	while((millis()-start) < ms);
 // }
 
-// void CFastLED::setTemperature(const struct CRGB & temp) {
-// 	CLEDController *pCur = CLEDController::head();
-// 	while(pCur) {
-// 		pCur->setTemperature(temp);
-// 		pCur = pCur->next();
-// 	}
-// }
+void CFastLED::setTemperature(const struct CRGB & temp) {
+	// CLEDController *pCur = CLEDController::head();
+	// while(pCur) {
+	// 	pCur->setTemperature(temp);
+	// 	pCur = pCur->next();
+	// }
+}
 
-// void CFastLED::setCorrection(const struct CRGB & correction) {
-// 	CLEDController *pCur = CLEDController::head();
-// 	while(pCur) {
-// 		pCur->setCorrection(correction);
-// 		pCur = pCur->next();
-// 	}
-// }
+void CFastLED::setCorrection(const struct CRGB & correction) {
+	// CLEDController *pCur = CLEDController::head();
+	// while(pCur) {
+	// 	pCur->setCorrection(correction);
+	// 	pCur = pCur->next();
+	// }
+}
 
 // void CFastLED::setDither(uint8_t ditherMode)  {
 // 	CLEDController *pCur = CLEDController::head();
