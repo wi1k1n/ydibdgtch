@@ -11,21 +11,10 @@
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-unsigned long micros() {
-	return 0;
-}
-
-unsigned long millis() {
-	return 0;
-}
-
-void delay(uint32_t ms) {
-
-}
-
-void delayMicroseconds(uint32_t us) {
-
-}
+unsigned long micros();
+unsigned long millis();
+void delay(uint32_t ms);
+void delayMicroseconds(uint32_t us);
 
 void setup();
 void loop();
