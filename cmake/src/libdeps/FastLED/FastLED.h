@@ -69,22 +69,22 @@
 
 // FASTLED_NAMESPACE_BEGIN
 
-// /// definitions for the spi chipset constants
-// enum ESPIChipsets {
-//     LPD6803,
-// 	LPD8806,
-// 	WS2801,
-// 	WS2803,
-// 	SM16716,
-// 	P9813,
-// 	APA102,
-// 	SK9822,
-// 	DOTSTAR
-// };
+/// definitions for the spi chipset constants
+enum ESPIChipsets {
+    LPD6803,
+	LPD8806,
+	WS2801,
+	WS2803,
+	SM16716,
+	P9813,
+	APA102,
+	SK9822,
+	DOTSTAR
+};
 
-// enum ESM { SMART_MATRIX };
-// enum OWS2811 { OCTOWS2811,OCTOWS2811_400, OCTOWS2813};
-// enum SWS2812 { WS2812SERIAL };
+enum ESM { SMART_MATRIX };
+enum OWS2811 { OCTOWS2811,OCTOWS2811_400, OCTOWS2813};
+enum SWS2812 { WS2812SERIAL };
 
 // #ifdef HAS_PIXIE
 // template<uint8_t DATA_PIN, EOrder RGB_ORDER> class PIXIE : public PixieController<DATA_PIN, RGB_ORDER> {};
@@ -578,11 +578,11 @@ public:
 // 	CRGB *leds() { return (*this)[0].leds(); }
 };
 
-// #define FastSPI_LED FastLED
-// #define FastSPI_LED2 FastLED
-// #ifndef LEDS
-// #define LEDS FastLED
-// #endif
+#define FastSPI_LED FastLED
+#define FastSPI_LED2 FastLED
+#ifndef LEDS
+#define LEDS FastLED
+#endif
 
 extern CFastLED FastLED;
 
