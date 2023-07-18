@@ -27,6 +27,7 @@ target_include_directories(ydibgtch PUBLIC "${PROJECT_SOURCE_DIR}/../include")
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\.pio\libdeps\esp32\EncButton\src
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\.pio\libdeps\esp32\TimerMs\src
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\.pio\libdeps\esp32\Unity\src
+# D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\cores
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libraries\WiFi
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libraries\WebServer
@@ -34,6 +35,7 @@ target_include_directories(ydibgtch PUBLIC "${PROJECT_SOURCE_DIR}/../include")
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libraries\EEPROM
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\tools\sdk\include\mdns
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\tools\sdk\include\driver
+# D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\tools\sdk\include\config
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libdeps\FastLED
 # D:\prj\chess_maxon\dgt_chess_board\ydibdgtch\cmake\src\libdeps\VirtualButton
 

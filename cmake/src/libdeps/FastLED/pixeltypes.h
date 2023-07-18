@@ -3,7 +3,7 @@
 
 #include "FastLED.h"
 
-// #include <stdint.h>
+#include <stdint.h>
 // #include "lib8tion.h"
 #include "color.h"
 
@@ -167,13 +167,13 @@ struct CRGB {
 //     }
 
 //     /// allow assignment from R, G, and B
-// 	inline CRGB& setRGB (uint8_t nr, uint8_t ng, uint8_t nb) __attribute__((always_inline))
-//     {
-//         r = nr;
-//         g = ng;
-//         b = nb;
-//         return *this;
-//     }
+	inline CRGB& setRGB (uint8_t nr, uint8_t ng, uint8_t nb)
+    {
+        // r = nr;
+        // g = ng;
+        // b = nb;
+        return *this;
+    }
 
 //     /// allow assignment from H, S, and V
 // 	inline CRGB& setHSV (uint8_t hue, uint8_t sat, uint8_t val) __attribute__((always_inline))

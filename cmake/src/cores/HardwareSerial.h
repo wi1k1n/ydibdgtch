@@ -48,7 +48,7 @@
 #include <inttypes.h>
 
 #include "Stream.h"
-// #include "esp32-hal.h"
+#include "esp32-hal.h"
 
 class HardwareSerial: public Stream
 {
