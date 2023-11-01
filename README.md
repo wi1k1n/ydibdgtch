@@ -61,3 +61,6 @@ The following components need to be connected:
 # TODOs
 - get rid of sets/unordered_sets in favor of vector
 	- or implement more memory-efficient container myself
+
+# Technical details
+- Pieces can be covered with felt tape from the bottom to make collisions between pieces smooth
