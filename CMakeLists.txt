@@ -4,13 +4,14 @@ cmake_minimum_required(VERSION 3.10)
 project(YDIBDGTCH)
 
 # Specify the C++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 include_directories(source/win)
 include_directories(source/lib/engine)
+include_directories(source/lib/common)
 
-set(SOURCE_DIRS "source/win" "source/lib/engine")
+set(SOURCE_DIRS "source/win" "source/lib/engine" "source/lib/common")
 
 set(SOURCES "")
 set(HEADERS "")
@@ -32,3 +33,7 @@ endforeach()
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+
+if(WIN32)
+    add_compile_definitions(TARGET_WIN)
+endif()

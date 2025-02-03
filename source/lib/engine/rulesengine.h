@@ -1,12 +1,8 @@
 #ifndef RULESENGINE_H__
 #define RULESENGINE_H__
 
-//#include "sdk.h"
-//#include "constants.h"
-//#include "utilities.h"
-
-#include <vector>
-#include <unordered_map>
+#include "chs_types.h"
+#include "chs_string.h"
 
 enum class CHESSPIECE : uint8_t {
 	UNKNOWN = 255,
@@ -41,6 +37,16 @@ enum class CHESSINITSTATE : uint8_t {
 	CLASSIC = 1,
 };
 
+enum class CHESSMOVEINFO : uint8_t {
+	UNKNOWN = 255,
+	NONE = 0,
+	TAKING = 1, // the move is taking another piece
+	CASTLING = 2, // the move is castling
+	PROMOTION = 3, // the move is pawn promotion
+};
+
+const int8_t CHESSLOCATION_INVALID = -1;
+
 class ChessPiece {
 public:
 	ChessPiece(
@@ -57,6 +63,7 @@ public:
 
 	/// @brief Initialize piece using FEN notation (white/black mode only)
 	ChessPiece(char c, CHESSHISTORY history = CHESSHISTORY::NONE);
+	ChessPiece(const String& s, CHESSHISTORY history = CHESSHISTORY::NONE);
 
 	inline CHESSPIECE GetPiece() const { return m_piece; }
 	inline CHESSCOLOR GetColor() const { return m_color; }
@@ -78,9 +85,14 @@ public:
 			&& GetHistory() != CHESSHISTORY::UNKNOWN;
 	}
 
+	String ToString(bool symbolic = true) const;
+
 	bool operator==(const ChessPiece& other) const {
 		return m_color == other.m_color && m_piece == other.m_piece && m_history == other.m_history;
 	}
+
+private:
+	void init(char c, CHESSHISTORY history);
 
 private:
 	CHESSPIECE m_piece = CHESSPIECE::UNKNOWN;
@@ -88,99 +100,118 @@ private:
 	CHESSHISTORY m_history = CHESSHISTORY::NONE;
 };
 
-//struct ChessPiece {
-//	static char _pieceSymbols[];
-//
-//	// getters should be adjusted if bitness is changed
-//	uint8_t _piece : 4;
-//	uint8_t _color : 2;
-//	uint8_t _history : 1; // extra info flag - king/rook: was moved before; pawn: susceptible to en-passant
-//
-//	ChessPiece(CHESSPIECE piece = CHESSPIECE::UNKNOWN, CHESSCOLOR color = CHESSCOLOR::UNKNOWN, bool history = false)
-//		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)), _history(history) { }
-//	ChessPiece(const ChessPiece& piece) 
-//		: _piece(piece._piece), _color(piece._color), _history(piece._history) { }
-//	//ChessPiece(const String& s);
-//	//ChessPiece(char c);
-//	~ChessPiece() {}
-//
-//	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
-//	void setColor(CHESSCOLOR color) { _color = static_cast<uint8_t>(color); }
-//	void setHistory(bool value) { _history = value; }
-//	inline CHESSPIECE getPiece() const { return static_cast<CHESSPIECE>(_piece == 0b00001111 ? -1 : _piece); }
-//	inline CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
-//	inline CHESSCOLOR getColorOpposite() const { CHESSCOLOR clr = getColor(); return (clr == CHESSCOLOR::BLACK) ? CHESSCOLOR::WHITE : (clr == CHESSCOLOR::WHITE ? CHESSCOLOR::BLACK : clr); }
-//	bool getHistory() const { return static_cast<bool>(_history); }
-//
-//	inline bool isValid() const { return getPiece() != CHESSPIECE::UNKNOWN && getColor() != CHESSCOLOR::UNKNOWN; }
-//
-//	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
-//
-//	//String toString(bool symbolic = true) const;
-//private:
-//	//void _initFromChar(char c);
-//};
+class ChessPieceLocation {
+public:
+	ChessPieceLocation() = default;
+	ChessPieceLocation(const ChessPieceLocation& piece)
+		: m_row(piece.m_row), m_col(piece.m_col) {}
+	ChessPieceLocation(const ChessPieceLocation&& piece) noexcept
+		: m_row(piece.m_row), m_col(piece.m_col) {}
+	~ChessPieceLocation() {}
 
-// struct ChessPieceLocation {
-// 	int8_t _row : 4;
-// 	int8_t _col : 4;
-// 
-// 	ChessPieceLocation() = default;
-// 	ChessPieceLocation(int8_t idx)
-// 		: _row(idx / 8), _col(idx % 8) { }
-// 	ChessPieceLocation(int8_t row, int8_t col)
-// 		: _row(row), _col(col) { }
-// 	ChessPieceLocation(std::pair<int8_t, int8_t> pair)
-// 		: _row(pair.first), _col(pair.second) { }
-// 	ChessPieceLocation(const ChessPieceLocation& piece) {
-// 		setLocation(piece._row, piece._col);
-// 	}
-// 	ChessPieceLocation(const String& s);
-// 	~ChessPieceLocation() {}
-// 
-// 	void setLocation(int8_t row, int8_t col) { _row = row; _col = col; }
-// 	inline bool isOnBoard() const { return isOnBoard(_row, _col); }
-// 
-// 	static bool isOnBoard(int8_t row, int8_t col) { return col >= 0 && col < 8 && row >= 0 && row < 8; }
-// 
-// 	bool operator==(const ChessPieceLocation& other) const { return _row == other._row && _col == other._col; }
-// 
-// 	String toString(bool symbolic = true) const {
-// 		if (symbolic)
-// 			return String(static_cast<char>('a' + _col)) + String(_row + 1);
-// 		return String(_row) + ":" + String(_col);
-// 	}
-// };
-// 
-// // Same as ChessPieceLocation with extra info (to keep CHessPieceLocation memory footprint small)
-// struct ChessMoveLocation : public ChessPieceLocation {
-// 	bool _take = 0;
-// 
-// 	ChessMoveLocation(const ChessMoveLocation& piece) : ChessPieceLocation(piece), _take(piece._take) { }
-// 	ChessMoveLocation(int8_t row, int8_t col, bool take = false) : ChessPieceLocation(row, col), _take(take) { }
-// 	ChessMoveLocation(std::pair<int8_t, int8_t> pair, bool take = false) : ChessPieceLocation(pair), _take(take) { }
-// 	
-// 	bool isTaking() const { return _take; }
-// 	
-// 	bool operator==(const ChessMoveLocation& other) const { return _row == other._row && _col == other._col && _take == other._take; }
-// };
+	ChessPieceLocation(int8_t row, int8_t col)
+		: m_row(row), m_col(col) {}
+	ChessPieceLocation(int8_t idx)
+		: m_row(idx / 8), m_col(idx % 8) {}
+	ChessPieceLocation(std::pair<int8_t, int8_t> pair)
+		: m_row(pair.first), m_col(pair.second) {}
+	ChessPieceLocation(const String& s);
 
-//namespace std {
-//template<>
-//struct hash<ChessPieceLocation> {
-//	size_t operator()(const ChessPieceLocation& other) const {
-//		return hash<int8_t>()(other._row) ^ hash<int8_t>()(other._col);
-//	}
-//};
-//template<>
-//struct hash<CHESSPIECE> {
-//	size_t operator()(const CHESSPIECE& other) const {
-//		return hash<int8_t>()(static_cast<int8_t>(other));
-//	}
-//};
-//} // namespace std
+	inline int8_t GetRow() const { return m_row; }
+	inline int8_t GetCol() const { return m_col; }
 
-//typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
+	void SetLocation(int8_t row, int8_t col) { m_row = row; m_col = col; }
+	inline bool IsOnBoard() const { return m_col >= 0 && m_col < 8 && m_row >= 0 && m_row < 8; }
+
+	bool operator==(const ChessPieceLocation& other) const { return m_row == other.m_row && m_col == other.m_col; }
+
+	String ToString(bool symbolic = true) const {
+		if (symbolic)
+			return String(static_cast<char>('a' + m_col)) + String(m_row + 1);
+		return String(m_row) + ":" + String(m_col);
+	}
+
+private:
+	int8_t m_row = CHESSLOCATION_INVALID;
+	int8_t m_col = CHESSLOCATION_INVALID;
+};
+
+#if 0 // temp
+class ChessMoveLocation : public ChessPieceLocation {
+public:
+	ChessMoveLocation(const ChessMoveLocation& piece)
+		: ChessPieceLocation(piece), m_moveInfo(piece.m_moveInfo), m_promotionTarget(piece.m_promotionTarget) {}
+
+	ChessMoveLocation(int8_t row, int8_t col, CHESSMOVEINFO moveInfo = CHESSMOVEINFO::NONE, CHESSPIECE promotionTarget = CHESSPIECE::UNKNOWN)
+		: ChessPieceLocation(row, col), m_moveInfo(moveInfo), m_promotionTarget(promotionTarget) {}
+
+private:
+	CHESSMOVEINFO m_moveInfo = CHESSMOVEINFO::NONE;
+	CHESSPIECE m_promotionTarget = CHESSPIECE::UNKNOWN; // only used if m_moveInfo == CHESSMOVEINFO::PROMOTION
+};
+#endif
+
+namespace std {
+
+template<>
+struct hash<ChessPieceLocation> {
+	size_t operator()(const ChessPieceLocation& other) const {
+		return hash<int8_t>()(other.GetRow()) ^ hash<int8_t>()(other.GetCol());
+	}
+};
+template<>
+struct hash<CHESSPIECE> {
+	size_t operator()(const CHESSPIECE& other) const {
+		return hash<int8_t>()(static_cast<int8_t>(other));
+	}
+};
+
+} // namespace std
+
+class ChessGameState {
+public:
+	ChessGameState(CHESSINITSTATE initState = CHESSINITSTATE::CLASSIC, CHESSCOLOR colorToMove = CHESSCOLOR::WHITE);
+	ChessGameState(const ChessGameState& other)
+		: m_pieces(other.m_pieces), m_colorToMove(other.m_colorToMove), m_fullMoves(other.m_fullMoves), m_halfMoves(other.m_halfMoves) {}
+	ChessGameState(const ChessGameState&& other) noexcept
+		: m_pieces(other.m_pieces), m_colorToMove(other.m_colorToMove), m_fullMoves(other.m_fullMoves), m_halfMoves(other.m_halfMoves) {}
+	~ChessGameState() {}
+
+	ChessGameState(const String& fenString, bool allowPartial = true);
+
+	ChessPiece At(const ChessPieceLocation& location) const;
+	ChessPiece At(uint8_t row, uint8_t col) const;
+	ChessPiece At(uint8_t idx) const;
+	ChessPiece At(const String& s) const; // only lower case!
+	
+	void Set(const ChessPieceLocation& location, const ChessPiece& piece);
+	void Set(uint8_t row, uint8_t col, const ChessPiece& piece);
+	void Set(const String& location, const ChessPiece& piece);
+	void Set(const String& location, const String& piece);
+	void Unset(const ChessPieceLocation& location);
+	void Unset(uint8_t row, uint8_t col);
+	void Unset(const String& location);
+
+	String ToString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
+	String ToFEN() const;
+
+private:
+	void fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
+	void fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
+	void fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
+	void fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
+
+	/// @param allowPartial Still initialize even if FEN is incomplete
+	bool initFromFEN(const String& fenString, bool allowPartial = true);
+
+private:
+	Hashmap<ChessPieceLocation, ChessPiece> m_pieces;
+	CHESSCOLOR m_colorToMove = CHESSCOLOR::WHITE;
+	uint16_t m_fullMoves = 1;
+	uint8_t m_halfMoves = 0;
+};
+
+
 //
 //class ChessGameState {
 //	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces; // TODO: convert into std::vector<ChessPiece> _pieces;
@@ -276,5 +307,22 @@ private:
 //
 //	String toString() const override { return "ClassicChessRules"; }
 //};
+
+
+// 
+// // Same as ChessPieceLocation with extra info (to keep CHessPieceLocation memory footprint small)
+// struct ChessMoveLocation : public ChessPieceLocation {
+// 	bool _take = 0;
+// 
+// 	ChessMoveLocation(const ChessMoveLocation& piece) : ChessPieceLocation(piece), _take(piece._take) { }
+// 	ChessMoveLocation(int8_t row, int8_t col, bool take = false) : ChessPieceLocation(row, col), _take(take) { }
+// 	ChessMoveLocation(std::pair<int8_t, int8_t> pair, bool take = false) : ChessPieceLocation(pair), _take(take) { }
+// 	
+// 	bool isTaking() const { return _take; }
+// 	
+// 	bool operator==(const ChessMoveLocation& other) const { return _row == other._row && _col == other._col && _take == other._take; }
+// };
+
+//typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
 
 #endif // RULESENGINE_H__

@@ -1,365 +1,412 @@
 #include "rulesengine.h"
-
-#include <vector>
-#include <algorithm>
-#include <utility>
-#include <unordered_map>
-#include <unordered_set>
+#include "chs_common.h"
 
 ////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// ChessPiece ////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
 ChessPiece::ChessPiece(char c, CHESSHISTORY history) {
+	init(c, history);
+}
+
+ChessPiece::ChessPiece(const String& s, CHESSHISTORY history) {
+	if (s.isEmpty())
+		return;
+	init(s[0], history);
+
+	if (s.length() > 1)
+		m_history = s[1] == '.' ? CHESSHISTORY::MOVED : CHESSHISTORY::UNKNOWN; // TODO: double check and fix
+}
+
+String ChessPiece::ToString(bool symbolic) const {
+	if (!IsValid())
+		return String('?');
+		if (!symbolic)
+			return String(static_cast<uint8_t>(m_color)) + "-" + String(static_cast<uint8_t>(m_piece)) + "." + String(static_cast<uint8_t>(m_history));
+		
+		char pieceSymbol;
+		switch (m_piece) {
+			case CHESSPIECE::PAWN: pieceSymbol = 'P'; break;
+			case CHESSPIECE::KNIGHT: pieceSymbol = 'N'; break;
+			case CHESSPIECE::BISHOP: pieceSymbol = 'B'; break;
+			case CHESSPIECE::ROOK: pieceSymbol = 'R'; break;
+			case CHESSPIECE::QUEEN: pieceSymbol = 'Q'; break;
+			case CHESSPIECE::KING: pieceSymbol = 'K'; break;
+			default: return String('?');
+		}
+		if (m_color == CHESSCOLOR::BLACK)
+			pieceSymbol += 'a' - 'A';
+		return String(pieceSymbol);
+}
+
+void ChessPiece::init(char c, CHESSHISTORY history) {
 	const char blackSymbol = c < 'a' ? (c + ('a' - 'A')) : c;
 	switch (blackSymbol) {
-		case 'p': m_piece = CHESSPIECE::PAWN; break;
-		case 'n': m_piece = CHESSPIECE::KNIGHT; break;
-		case 'b': m_piece = CHESSPIECE::BISHOP; break;
-		case 'r': m_piece = CHESSPIECE::ROOK; break;
-		case 'q': m_piece = CHESSPIECE::QUEEN; break;
-		case 'k': m_piece = CHESSPIECE::KING; break;
-		default: m_piece = CHESSPIECE::UNKNOWN; break;
+	case 'p': m_piece = CHESSPIECE::PAWN; break;
+	case 'n': m_piece = CHESSPIECE::KNIGHT; break;
+	case 'b': m_piece = CHESSPIECE::BISHOP; break;
+	case 'r': m_piece = CHESSPIECE::ROOK; break;
+	case 'q': m_piece = CHESSPIECE::QUEEN; break;
+	case 'k': m_piece = CHESSPIECE::KING; break;
+	default: m_piece = CHESSPIECE::UNKNOWN; break;
 	}
 	if (m_piece != CHESSPIECE::UNKNOWN)
 		m_color = c < 'a' ? CHESSCOLOR::WHITE : CHESSCOLOR::BLACK;
 	m_history = history;
 }
 
-// char ChessPiece::_pieceSymbols[] = { 'p', 'n', 'b', 'r', 'q', 'k' };
+ChessPieceLocation::ChessPieceLocation(const String& s) {
+	if (s.length() != 2)
+		return;
 
-//ChessPiece::ChessPiece(const String& s) 
-//	: _piece(static_cast<uint8_t>(CHESSPIECE::UNKNOWN)), _color(static_cast<uint8_t>(CHESSCOLOR::UNKNOWN)), _history(0) {
-//// #ifdef _CHRULESDBG_
-//// 	Serial.print(F("Constructing chess piece from string: "));
-//// 	Serial.println(s);
-//// #endif
-//
-//	if (s.isEmpty())
-//		return;
-//	
-//	_initFromChar(s[0]);
-//
-//	if (s.length() > 1)
-//		_history = s[1] == '.';
-//
-//// #ifdef _CHRULESDBG_
-//// 	Serial.print(F("   success: "));
-//// 	Serial.println(toString());
-//// #endif
-//}
+	const char row = s[1];
+	char col = s[0];
+	if (col < 'a')
+		col += 'a' - 'A';
+	m_row = (row < '1' || row > '8') ? CHESSLOCATION_INVALID : (row - '1');
+	m_col = (col < 'a' || col > 'h') ? CHESSLOCATION_INVALID : (col - 'a');
+}
 
-//ChessPiece::ChessPiece(char c)
-//	: _piece(static_cast<uint8_t>(CHESSPIECE::UNKNOWN)), _color(static_cast<uint8_t>(CHESSCOLOR::UNKNOWN)), _history(0) {
-//	_initFromChar(c);
-//}
-//
-//void ChessPiece::_initFromChar(char c) {
-//	char whiteSymbol = c;
-//	if (whiteSymbol < 'a')
-//		whiteSymbol += 'a' - 'A';
-//
-//	uint8_t pieceSymbolsCount = countof(_pieceSymbols);
-//	for (uint8_t i = 0; i < pieceSymbolsCount; ++i) {
-//		if (whiteSymbol == _pieceSymbols[i]) {
-//			_piece = i;
-//			_color = static_cast<uint8_t>(c == whiteSymbol ? CHESSCOLOR::BLACK : CHESSCOLOR::WHITE);
-//			break;
-//		}
-//	}
-//}
+ChessGameState::ChessGameState(CHESSINITSTATE initState, CHESSCOLOR colorToMove)
+	: m_colorToMove(colorToMove) {
+	if (initState == CHESSINITSTATE::CLASSIC) {
+		m_pieces.reserve(32);
+		static const std::initializer_list<CHESSPIECE> startLine = {
+			CHESSPIECE::ROOK,
+			CHESSPIECE::KNIGHT,
+			CHESSPIECE::BISHOP,
+			CHESSPIECE::QUEEN,
+			CHESSPIECE::KING,
+			CHESSPIECE::BISHOP,
+			CHESSPIECE::KNIGHT,
+			CHESSPIECE::ROOK
+		};
+		fillRow(0, startLine, CHESSCOLOR::WHITE);
+		fillRow(1, CHESSPIECE::PAWN, CHESSCOLOR::WHITE);
+		fillRow(6, CHESSPIECE::PAWN, CHESSCOLOR::BLACK);
+		fillRow(7, startLine, CHESSCOLOR::BLACK);
+	}
+}
 
-//String ChessPiece::toString(bool symbolic) const {
-//	if (!symbolic)
-//		return String(_color) + "-" + String(_piece) + "." + String(_history);
-//	if (_piece >= countof(_pieceSymbols) || getColor() == CHESSCOLOR::UNKNOWN)
-//		return String('?');
-//	return String(getColor() == CHESSCOLOR::BLACK ? _pieceSymbols[_piece] : (static_cast<char>(_pieceSymbols[_piece] - ('a' - 'A'))));
-//}
+ChessGameState::ChessGameState(const String& fenString, bool allowPartial) {
+	initFromFEN(fenString, allowPartial);
+}
 
-//ChessPieceLocation::ChessPieceLocation(const String& s)
-//	: _row(-1), _col(-1) {
-//// #ifdef _CHRULESDBG_
-//// 	Serial.print(F("Constructing location from string: "));
-//// 	Serial.println(s);
-//// #endif
-//
-//	if (s.length() != 2)
-//		return;
-//	
-//	const char row = s[1];
-//	char col = s[0];
-//	if (col < 'a')
-//		col += 'a' - 'A';
-//	_row = (row < '1' || row > '8') ? -1 : (row - '1');
-//	_col = (col < 'a' || col > 'h') ? -1 : (col - 'a');
-//
-//// #ifdef _CHRULESDBG_
-//// 	Serial.print(F("   success: "));
-//// 	Serial.println(toString());
-//// #endif
-//
-//}
-//
-//////////////////////////////////////////////////////////////////////////////
-////////////////////////////////// Game State ////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-//
-//ChessGameState::ChessGameState(const CHESSINITIALSTATE& initState, const CHESSCOLOR& colorToMove) {
-//	_colorToMove = colorToMove;
-//	if (initState == CHESSINITIALSTATE::CLASSIC) {
-//		_pieces.reserve(16);
-//		std::initializer_list<CHESSPIECE> startLine = {
-//			CHESSPIECE::ROOK,
-//			CHESSPIECE::KNIGHT,
-//			CHESSPIECE::BISHOP,
-//			CHESSPIECE::QUEEN,
-//			CHESSPIECE::KING,
-//			CHESSPIECE::BISHOP,
-//			CHESSPIECE::KNIGHT,
-//			CHESSPIECE::ROOK
-//		};
-//		_fillRow(0, startLine, CHESSCOLOR::WHITE);
-//		_fillRow(1, CHESSPIECE::PAWN, CHESSCOLOR::WHITE);
-//		_fillRow(6, CHESSPIECE::PAWN, CHESSCOLOR::BLACK);
-//		_fillRow(7, startLine, CHESSCOLOR::BLACK);
-//	}
-//}
-//
-//ChessGameState::ChessGameState(const ChessGameState& other)
-//	: _pieces(other._pieces), _colorToMove(other._colorToMove), _fullMoves(other._fullMoves), _halfMoves(other._halfMoves) { }
-//
-//ChessGameState::ChessGameState(const String& fenString, bool allowPartial) {
-//	_initFromFEN(fenString, allowPartial);
-//	// LOG("Initialized CGS"_f);
-//	// for (const auto& entry : this->_pieces) {
-//	// 	LOG(entry.first.toString());
-//	// 	LOG(" => "_f);
-//	// 	LOGLN(entry.second.toString());
-//	// }
-//	// LOGLN();
-//}
-//
-//bool ChessGameState::_initFromFEN(const String& fenString, bool allowPartial) {
-//	LOG("Loading from FEN: ");
-//	LOGLN(fenString);
-//
-//	bool minimallyInitialized = false;
-//	auto invalidate = [&]() {
-//		// for (const auto& entry : this->_pieces) {
-//		// 	LOG(entry.first.toString());
-//		// 	LOG(" => "_f);
-//		// 	LOGLN(entry.second.toString());
-//		// }
-//		if (allowPartial && minimallyInitialized)
-//			return true;
-//
-//		DLOGLN("Invalidated with false"_f);
-//		this->_pieces.clear();
-//		this->_colorToMove = CHESSCOLOR::UNKNOWN;
-//		this->_fullMoves = 0;
-//		this->_halfMoves = 1;
-//		return false;
-//	};
-//
-//	// 1. Handle pieces placement part
-//	uint8_t fenCursor = 0;
-//	std::vector<String> rows(8);
-//	{ // retrieve strings that corresponds to rows
-//		uint8_t rowIdx = 0;
-//		for (fenCursor = 0; fenCursor < fenString.length(); ++fenCursor) {
-//			char cc = fenString[fenCursor];
-//			if (cc == ' ')
-//				break;
-//			if (cc == '/') {
-//				++rowIdx;
-//				continue;
-//			}
-//			rows[rowIdx] += fenString[fenCursor];
-//		}
-//		// Validate content and create pieces
-//		if (rowIdx != 7)
-//			return invalidate();
-//	}
-//	
-//	// process rows
-//	for (int8_t rowIdx = 7; rowIdx >= 0; --rowIdx) {
-//		const String& row = rows[7 - rowIdx];
-//
-//		uint8_t pieceCounter = 0;
-//		for (uint8_t i = 0; i < row.length(); ++i) {
-//			char cc = row[i];
-//			if (cc >= '1' && cc <= '8') {
-//				uint8_t n = cc - '0';
-//				if (pieceCounter + n > 8)
-//					return invalidate();
-//				pieceCounter += n;
-//				continue;
-//			}
-//			if (pieceCounter > 7)
-//				return invalidate();
-//			ChessPiece piece(cc);
-//			if (!piece.isValid())
-//				return invalidate();
-//			set(rowIdx, pieceCounter++, piece);
-//			// LOG(at(rowIdx, pieceCounter-1).toString()); LOG(" -> "_f); LOG(rowIdx); LOG(";"); LOGLN(pieceCounter - 1);
-//		}
-//		if (pieceCounter > 8)
-//			return invalidate();
-//	}
-//	minimallyInitialized = true;
-//	LOGLN("1. Handle pieces placement part");
-//
-//	// 2. Color to move
-//	if (++fenCursor >= fenString.length())
-//		return invalidate();
-//	
-//	char clrToMoveChar = fenString[fenCursor++];
-//	if (clrToMoveChar == 'w')
-//		_colorToMove = CHESSCOLOR::WHITE;
-//	else if (clrToMoveChar == 'b')
-//		_colorToMove = CHESSCOLOR::BLACK;
-//	else
-//		return invalidate();
-//	
-//	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
-//		return invalidate();
-//	LOGLN("2. Color to move");
-//	
-//	// 3. Castling options
-//	if (fenCursor >= fenString.length())
-//		return invalidate();
-//	char castlingCharFirst = fenString[fenCursor++];
-//	if (castlingCharFirst != '-') {
-//		if (castlingCharFirst == ' ')
-//			return invalidate();
-//		// TODO: implement castling incl. Shredder-FEN standard
-//		uint8_t castlingCharCount = 1;
-//		for (; fenCursor < fenString.length(); ++fenCursor, ++castlingCharCount)
-//			if (fenString[fenCursor] == ' ')
-//				break;
-//		if (castlingCharCount > 4)
-//			return invalidate();
-//	}
-//	LOGLN("3. Castling options");
-//	
-//	// 4. En-passant pawn
-//	if (++fenCursor >= fenString.length())
-//		return invalidate();
-//
-//	char epCharFirst = fenString[fenCursor++];
-//	if (epCharFirst != '-') {
-//		if (epCharFirst < 'a')
-//			epCharFirst += 'a' - 'A';
-//		if (epCharFirst < 'a' || epCharFirst > 'h')
-//			return invalidate();
-//		// get en-passant sqare row
-//		if (fenCursor >= fenString.length())
-//			return invalidate();
-//		char epCharRow = fenString[fenCursor++];
-//		// get pawn sucseptible to en-passant take
-//		int8_t pawnRow = -1;
-//		if (_colorToMove == CHESSCOLOR::BLACK && epCharRow == '3')
-//			pawnRow = 4;
-//		else if (_colorToMove == CHESSCOLOR::WHITE && epCharRow == '6')
-//			pawnRow = 5;
-//		if (pawnRow < 0)
-//			return invalidate();
-//		ChessPiece pawn = at(pawnRow, epCharFirst - 'a');
-//		if (!pawn.isValid() || pawn.getPiece() != CHESSPIECE::PAWN || pawn.getColor() == _colorToMove)
-//			invalidate();
-//		pawn.setHistory(true);
-//	}
-//	LOGLN("4. En-passant pawn");
-//	
-//	// 5. Half-moves since last pawn advance
-//	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
-//		return invalidate();
-//	
-//	String halfMoves;
-//	for (; fenCursor < fenString.length(); ++fenCursor) {
-//		char cc = fenString[fenCursor];
-//		if (cc == ' ')
-//			break;
-//		if (!isDigit(cc))
-//			return invalidate();
-//		halfMoves += static_cast<char>(cc);
-//	}
-//	_halfMoves = halfMoves.toInt();
-//	LOGLN("5. Half-moves since last pawn advance");
-//	
-//	// 6. Full-moves since start
-//	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
-//		return invalidate();
-//	
-//	String fullMoves;
-//	for (; fenCursor < fenString.length(); ++fenCursor) {
-//		char cc = fenString[fenCursor];
-//		if (cc == ' ')
-//			break;
-//		if (!isDigit(cc))
-//			return invalidate();
-//		fullMoves += static_cast<char>(cc);
-//	}
-//	_fullMoves = fullMoves.toInt();
-//	if (_fullMoves == 0)
-//		return invalidate();
-//	LOGLN("6. Full-moves since start");
-//	
-//	return true;
-//}
-//
-//void ChessGameState::_fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color) {
-//	for (uint8_t i = 0; i < 8; ++i)
-//		_pieces.emplace(std::make_pair(ChessPieceLocation{ row, i }, ChessPiece{ piece, color }));
-//}
-//void ChessGameState::_fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color) {
-//	auto it = pieces.begin();
-//	for (uint8_t i = 0; i < 8 && it != pieces.end(); ++i, ++it)
-//		_pieces.emplace(std::make_pair(ChessPieceLocation{ row, i }, ChessPiece{ *it, color }));
-//}
-//void ChessGameState::_fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color) {
-//	for (uint8_t i = 0; i < 8; ++i)
-//		_pieces.emplace(std::make_pair(ChessPieceLocation{ i, col }, ChessPiece{ piece, color }));
-//}
-//void ChessGameState::_fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color) {
-//	auto it = pieces.begin();
-//	for (uint8_t i = 0; i < 8 && it != pieces.end(); ++i, ++it)
-//		_pieces.emplace(std::make_pair(ChessPieceLocation{ i, col }, ChessPiece{ *it, color }));
-//}
-//
-//String ChessGameState::toString(bool legend, bool transpose, bool zeroBased) const {
-//	String res;
-//	auto drawColLegend = [&res, legend, transpose]() {
-//		res += String(transpose ? "\n" : "") + String(legend ? "    " : "");
-//		for (uint8_t col = 0; col < 8; ++col)
-//			res += " " + String(static_cast<char>('a' + col)) + " " + (col == 7 ? "" : " ");
-//		res += '\n';
-//		if (!transpose)
-//			res += '\n';
-//	};
-//
-//	if (legend && !transpose)
-//		drawColLegend();
-//
-//	const int8_t rowStart = 7 * transpose + 0; // transpose ? 7 : 0;
-//	const int8_t rowEnd = -9 * transpose + 8; // transpose ? -1 : 8;
-//	const int8_t rowIncrement = -2 * transpose + 1; // transpose ? -1 : 1;
-//	for (int8_t row = rowStart; row != rowEnd; row += rowIncrement) {
-//		if (legend)
-//			res += String(row + (!zeroBased)) + "   ";
-//		for (uint8_t col = 0; col < 8; ++col) {
-//			auto entry = _pieces.find({ static_cast<uint8_t>(row), col });
-//			res += " " + (entry == _pieces.end() ? " " : entry->second.toString()) + " " + (col == 7 ? "" : "|");
-//		}
-//		res += '\n';
-//	}
-//
-//	if (legend && transpose)
-//		drawColLegend();
-//	
-//	return res;
-//}
+ChessPiece ChessGameState::At(const ChessPieceLocation& location) const {
+	auto entry = m_pieces.find(location);
+	return entry != m_pieces.end() ? entry->second : ChessPiece();
+}
+
+ChessPiece ChessGameState::At(uint8_t row, uint8_t col) const {
+	return At(ChessPieceLocation(row, col));
+}
+
+ChessPiece ChessGameState::At(uint8_t idx) const {
+	return At(idx / 8, idx % 8);
+}
+
+ChessPiece ChessGameState::At(const String& s) const {
+	return At(ChessPieceLocation(s));
+}
+
+void ChessGameState::Set(const ChessPieceLocation& location, const ChessPiece& piece) {
+	if (!location.IsOnBoard())
+		return;
+	if (piece.IsValid())
+		m_pieces.emplace(location, piece);
+	else
+		m_pieces.erase(location);
+}
+
+void ChessGameState::Set(uint8_t row, uint8_t col, const ChessPiece& piece) {
+	Set(ChessPieceLocation(row, col), piece);
+}
+
+void ChessGameState::Set(const String& location, const ChessPiece& piece) {
+	Set(ChessPieceLocation(location), piece);
+}
+
+void ChessGameState::Set(const String& location, const String& piece) {
+	Set(location, ChessPiece(piece));
+}
+
+void ChessGameState::Unset(const ChessPieceLocation& location) {
+	Set(location, ChessPiece());
+}
+
+void ChessGameState::Unset(uint8_t row, uint8_t col) {
+	Set(row, col, ChessPiece());
+}
+
+void ChessGameState::Unset(const String& location) {
+	Set(location, ChessPiece());
+}
+
+String ChessGameState::ToString(bool legend, bool transpose, bool zeroBased) const {
+	String res;
+	auto drawColLegend = [&res, legend, transpose]() {
+		res += String(transpose ? "\n" : "") + String(legend ? "    " : "");
+		for (uint8_t col = 0; col < 8; ++col)
+			res += String(" ") + String(static_cast<char>('a' + col)) + " " + String(col == 7 ? "" : " ");
+		res += '\n';
+		if (!transpose)
+			res += '\n';
+	};
+
+	if (legend && !transpose)
+		drawColLegend();
+
+	const int8_t rowStart = 7 * transpose + 0; // transpose ? 7 : 0;
+	const int8_t rowEnd = -9 * transpose + 8; // transpose ? -1 : 8;
+	const int8_t rowIncrement = -2 * transpose + 1; // transpose ? -1 : 1;
+	for (int8_t row = rowStart; row != rowEnd; row += rowIncrement) {
+		if (legend)
+			res += String(row + (!zeroBased)) + "   ";
+		for (int8_t col = 0; col < 8; ++col) {
+			auto entry = m_pieces.find({ static_cast<int8_t>(row), col });
+			res += String(" ") + (entry == m_pieces.end() ? String(" ") : entry->second.ToString()) + String(" ") + String(col == 7 ? "" : "|");
+		}
+		res += '\n';
+	}
+
+	if (legend && transpose)
+		drawColLegend();
+	
+	return res;
+}
+
+String ChessGameState::ToFEN() const {
+	String fen;
+	uint8_t emptyCounter = 0;
+	for (int8_t row = 7; row >= 0; --row) {
+		for (uint8_t col = 0; col < 8; ++col) {
+			ChessPiece piece = At(row, col);
+			if (!piece.IsValid()) {
+				++emptyCounter;
+				continue;
+			}
+			if (emptyCounter) {
+				fen += String(static_cast<int>(emptyCounter));
+				emptyCounter = 0;
+			}
+			fen += piece.ToString();
+		}
+		if (emptyCounter) {
+			fen += String(static_cast<int>(emptyCounter));
+			emptyCounter = 0;
+		}
+		fen += row > 0 ? "/" : "";
+		// Serial.println();
+	}
+	fen += String(" ") + String((m_colorToMove == CHESSCOLOR::BLACK ? "b" : "w"));
+	fen += " KQkq"; // TODO: handle castling properly!
+
+	// semantically only a single en-passant pawn exists -> first occurence
+	String enPassant("-");
+	for (auto& entry : m_pieces) {
+		ChessPiece piece = entry.second;
+		if (piece.GetPiece() != CHESSPIECE::PAWN)
+			continue;
+		if (piece.GetHistory() == CHESSHISTORY::MOVED) { // TODO: fix chesshistory entries
+			enPassant = entry.first.ToString();
+			break;
+		}
+	}
+	fen += String(" ") + enPassant;
+	fen += String(" ") + String(m_fullMoves) + String(" ") + String(m_halfMoves);
+	return fen;
+}
+
+void ChessGameState::fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color) {
+	for (uint8_t i = 0; i < 8; ++i)
+		m_pieces.emplace(ChessPieceLocation(row, i), ChessPiece(piece, color));
+}
+
+void ChessGameState::fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color) {
+	auto it = pieces.begin();
+	for (uint8_t i = 0; i < 8 && it != pieces.end(); ++i, ++it)
+		m_pieces.emplace(ChessPieceLocation(row, i), ChessPiece(*it, color));
+}
+
+void ChessGameState::fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color) {
+	for (uint8_t i = 0; i < 8; ++i)
+		m_pieces.emplace(ChessPieceLocation(i, col), ChessPiece(piece, color));
+}
+
+void ChessGameState::fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color) {
+	auto it = pieces.begin();
+	for (uint8_t i = 0; i < 8 && it != pieces.end(); ++i, ++it)
+		m_pieces.emplace(ChessPieceLocation(i, col), ChessPiece(*it, color));
+}
+
+bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
+	LOGLN("Loading from FEN: ", fenString);
+
+	bool minimallyInitialized = false;
+	auto invalidate = [&]() {
+		// for (const auto& entry : this->_pieces) {
+		// 	LOG(entry.first.toString());
+		// 	LOG(" => "_f);
+		// 	LOGLN(entry.second.toString());
+		// }
+		if (allowPartial && minimallyInitialized)
+			return true;
+
+		DLOGLN("Invalidated with false");
+		this->m_pieces.clear();
+		this->m_colorToMove = CHESSCOLOR::UNKNOWN;
+		this->m_fullMoves = 0;
+		this->m_halfMoves = 1;
+		return false;
+	};
+
+	// 1. Handle pieces placement part
+	uint8_t fenCursor = 0;
+	Array<String> rows(8);
+	{ // retrieve strings that corresponds to rows
+		uint8_t rowIdx = 0;
+		for (fenCursor = 0; fenCursor < fenString.length(); ++fenCursor) {
+			char cc = fenString[fenCursor];
+			if (cc == ' ')
+				break;
+			if (cc == '/') {
+				++rowIdx;
+				continue;
+			}
+			rows[rowIdx] += fenString[fenCursor];
+		}
+		// Validate content and create pieces
+		if (rowIdx != 7)
+			return invalidate();
+	}
+	
+	// process rows
+	for (int8_t rowIdx = 7; rowIdx >= 0; --rowIdx) {
+		const String& row = rows[7 - rowIdx];
+
+		uint8_t pieceCounter = 0;
+		for (uint8_t i = 0; i < row.length(); ++i) {
+			char cc = row[i];
+			if (cc >= '1' && cc <= '8') {
+				uint8_t n = cc - '0';
+				if (pieceCounter + n > 8)
+					return invalidate();
+				pieceCounter += n;
+				continue;
+			}
+			if (pieceCounter > 7)
+				return invalidate();
+			ChessPiece piece(cc);
+			if (!piece.IsValid())
+				return invalidate();
+			Set(rowIdx, pieceCounter++, piece);
+			// LOG(at(rowIdx, pieceCounter-1).toString()); LOG(" -> "_f); LOG(rowIdx); LOG(";"); LOGLN(pieceCounter - 1);
+		}
+		if (pieceCounter > 8)
+			return invalidate();
+	}
+	minimallyInitialized = true;
+	LOGLN("1. Handle pieces placement part");
+
+	// 2. Color to move
+	if (++fenCursor >= fenString.length())
+		return invalidate();
+	
+	char clrToMoveChar = fenString[fenCursor++];
+	if (clrToMoveChar == 'w')
+		m_colorToMove = CHESSCOLOR::WHITE;
+	else if (clrToMoveChar == 'b')
+		m_colorToMove = CHESSCOLOR::BLACK;
+	else
+		return invalidate();
+	
+	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
+		return invalidate();
+	LOGLN("2. Color to move");
+	
+	// 3. Castling options
+	if (fenCursor >= fenString.length())
+		return invalidate();
+	char castlingCharFirst = fenString[fenCursor++];
+	if (castlingCharFirst != '-') {
+		if (castlingCharFirst == ' ')
+			return invalidate();
+		// TODO: implement castling incl. Shredder-FEN standard
+		uint8_t castlingCharCount = 1;
+		for (; fenCursor < fenString.length(); ++fenCursor, ++castlingCharCount)
+			if (fenString[fenCursor] == ' ')
+				break;
+		if (castlingCharCount > 4)
+			return invalidate();
+	}
+	LOGLN("3. Castling options");
+	
+	// 4. En-passant pawn
+	if (++fenCursor >= fenString.length())
+		return invalidate();
+
+	char epCharFirst = fenString[fenCursor++];
+	if (epCharFirst != '-') {
+		if (epCharFirst < 'a')
+			epCharFirst += 'a' - 'A';
+		if (epCharFirst < 'a' || epCharFirst > 'h')
+			return invalidate();
+		// get en-passant sqare row
+		if (fenCursor >= fenString.length())
+			return invalidate();
+		char epCharRow = fenString[fenCursor++];
+		// get pawn sucseptible to en-passant take
+		int8_t pawnRow = -1;
+		if (m_colorToMove == CHESSCOLOR::BLACK && epCharRow == '3')
+			pawnRow = 4;
+		else if (m_colorToMove == CHESSCOLOR::WHITE && epCharRow == '6')
+			pawnRow = 5;
+		if (pawnRow < 0)
+			return invalidate();
+		ChessPiece pawn = At(pawnRow, epCharFirst - 'a');
+		if (!pawn.IsValid() || pawn.GetPiece() != CHESSPIECE::PAWN || pawn.GetColor() == m_colorToMove)
+			invalidate();
+		pawn.SetHistory(CHESSHISTORY::MOVED); // TODO: fix this
+	}
+	LOGLN("4. En-passant pawn");
+	
+	// 5. Half-moves since last pawn advance
+	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
+		return invalidate();
+	
+	String halfMoves;
+	for (; fenCursor < fenString.length(); ++fenCursor) {
+		char cc = fenString[fenCursor];
+		if (cc == ' ')
+			break;
+		if (!IsDigit(cc))
+			return invalidate();
+		halfMoves += static_cast<char>(cc);
+	}
+	m_halfMoves = (uint8_t)halfMoves.toInt();
+	LOGLN("5. Half-moves since last pawn advance");
+	
+	// 6. Full-moves since start
+	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
+		return invalidate();
+	
+	String fullMoves;
+	for (; fenCursor < fenString.length(); ++fenCursor) {
+		char cc = fenString[fenCursor];
+		if (cc == ' ')
+			break;
+		if (!IsDigit(cc))
+			return invalidate();
+		fullMoves += static_cast<char>(cc);
+	}
+	m_fullMoves = (uint8_t)fullMoves.toInt();
+	if (m_fullMoves == 0)
+		return invalidate();
+	LOGLN("6. Full-moves since start");
+	
+	return true;
+}
+
 //String ChessGameState::toFEN() const {
 //	String fen;
 //	uint8_t emptyCounter = 0;
@@ -740,3 +787,55 @@ ChessPiece::ChessPiece(char c, CHESSHISTORY history) {
 //	return possibleMoves;
 //}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//ChessPiece::ChessPiece(const String& s) 
+//	: _piece(static_cast<uint8_t>(CHESSPIECE::UNKNOWN)), _color(static_cast<uint8_t>(CHESSCOLOR::UNKNOWN)), _history(0) {
+//// #ifdef _CHRULESDBG_
+//// 	Serial.print(F("Constructing chess piece from string: "));
+//// 	Serial.println(s);
+//// #endif
+//
+//	if (s.isEmpty())
+//		return;
+//	
+//	_initFromChar(s[0]);
+//
+//	if (s.length() > 1)
+//		_history = s[1] == '.';
+//
+//// #ifdef _CHRULESDBG_
+//// 	Serial.print(F("   success: "));
+//// 	Serial.println(toString());
+//// #endif
+//}
