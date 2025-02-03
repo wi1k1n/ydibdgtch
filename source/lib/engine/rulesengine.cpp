@@ -10,7 +10,23 @@
 //////////////////////////////// ChessPiece ////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-char ChessPiece::_pieceSymbols[] = { 'p', 'n', 'b', 'r', 'q', 'k' };
+ChessPiece::ChessPiece(char c, CHESSHISTORY history) {
+	const char blackSymbol = c < 'a' ? (c + ('a' - 'A')) : c;
+	switch (blackSymbol) {
+		case 'p': m_piece = CHESSPIECE::PAWN; break;
+		case 'n': m_piece = CHESSPIECE::KNIGHT; break;
+		case 'b': m_piece = CHESSPIECE::BISHOP; break;
+		case 'r': m_piece = CHESSPIECE::ROOK; break;
+		case 'q': m_piece = CHESSPIECE::QUEEN; break;
+		case 'k': m_piece = CHESSPIECE::KING; break;
+		default: m_piece = CHESSPIECE::UNKNOWN; break;
+	}
+	if (m_piece != CHESSPIECE::UNKNOWN)
+		m_color = c < 'a' ? CHESSCOLOR::WHITE : CHESSCOLOR::BLACK;
+	m_history = history;
+}
+
+// char ChessPiece::_pieceSymbols[] = { 'p', 'n', 'b', 'r', 'q', 'k' };
 
 //ChessPiece::ChessPiece(const String& s) 
 //	: _piece(static_cast<uint8_t>(CHESSPIECE::UNKNOWN)), _color(static_cast<uint8_t>(CHESSCOLOR::UNKNOWN)), _history(0) {
@@ -723,3 +739,4 @@ char ChessPiece::_pieceSymbols[] = { 'p', 'n', 'b', 'r', 'q', 'k' };
 //
 //	return possibleMoves;
 //}
+

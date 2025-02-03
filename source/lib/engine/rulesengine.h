@@ -8,58 +8,119 @@
 #include <vector>
 #include <unordered_map>
 
-enum class CHESSPIECE : int8_t {
-	UNKNOWN = -1,
+enum class CHESSPIECE : uint8_t {
+	UNKNOWN = 255,
 	PAWN = 0,
-	KNIGHT,
-	BISHOP,
-	ROOK,
-	QUEEN,
-	KING
+	KNIGHT = 1,
+	BISHOP = 2,
+	ROOK = 3,
+	QUEEN = 4,
+	KING = 5,
 };
-enum class CHESSCOLOR : int8_t {
-	UNKNOWN = -1,
+
+enum class CHESSCOLOR : uint8_t {
+	UNKNOWN = 255,
 	WHITE = 0,
-	BLACK
+	BLACK = 1,
+	RED = 2,
+	BLUE = 3,
+	GREEN = 4,
+	YELLOW = 5,
 };
-enum class CHESSINITIALSTATE : int8_t {
-	UNKNOWN = -1,
-	CLASSIC = 0,
-	EMPTY
+
+enum class CHESSHISTORY : uint8_t {
+	UNKNOWN = 255,
+	NONE = 0,
+	MOVED = 1, // the piece has already moved once before (e.g. for castling)
+	ENPASSANT_VULNERABLE = 2, // the piece is vulnerable to en-passant
 };
 
-struct ChessPiece {
-	static char _pieceSymbols[];
+enum class CHESSINITSTATE : uint8_t {
+	UNKNOWN = 255,
+	EMPTY = 0,
+	CLASSIC = 1,
+};
 
-	// getters should be adjusted if bitness is changed
-	uint8_t _piece : 4;
-	uint8_t _color : 2;
-	uint8_t _history : 1; // extra info flag - king/rook: was moved before; pawn: susceptible to en-passant
-
-	ChessPiece(CHESSPIECE piece = CHESSPIECE::UNKNOWN, CHESSCOLOR color = CHESSCOLOR::UNKNOWN, bool history = false)
-		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)), _history(history) { }
-	ChessPiece(const ChessPiece& piece) 
-		: _piece(piece._piece), _color(piece._color), _history(piece._history) { }
-	//ChessPiece(const String& s);
-	//ChessPiece(char c);
+class ChessPiece {
+public:
+	ChessPiece(
+		CHESSPIECE piece = CHESSPIECE::UNKNOWN,
+		CHESSCOLOR color = CHESSCOLOR::UNKNOWN,
+		CHESSHISTORY history = CHESSHISTORY::NONE
+	)
+		: m_piece(piece), m_color(color), m_history(history) { }
+	ChessPiece(const ChessPiece& piece)
+		: m_piece(piece.m_piece), m_color(piece.m_color), m_history(piece.m_history) { }
+	ChessPiece(const ChessPiece&& piece) noexcept
+		: m_piece(piece.m_piece), m_color(piece.m_color), m_history(piece.m_history) { }
 	~ChessPiece() {}
 
-	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
-	void setColor(CHESSCOLOR color) { _color = static_cast<uint8_t>(color); }
-	void setHistory(bool value) { _history = value; }
-	inline CHESSPIECE getPiece() const { return static_cast<CHESSPIECE>(_piece == 0b00001111 ? -1 : _piece); }
-	inline CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
-	inline CHESSCOLOR getColorOpposite() const { CHESSCOLOR clr = getColor(); return (clr == CHESSCOLOR::BLACK) ? CHESSCOLOR::WHITE : (clr == CHESSCOLOR::WHITE ? CHESSCOLOR::BLACK : clr); }
-	bool getHistory() const { return static_cast<bool>(_history); }
+	/// @brief Initialize piece using FEN notation (white/black mode only)
+	ChessPiece(char c, CHESSHISTORY history = CHESSHISTORY::NONE);
 
-	inline bool isValid() const { return getPiece() != CHESSPIECE::UNKNOWN && getColor() != CHESSCOLOR::UNKNOWN; }
+	inline CHESSPIECE GetPiece() const { return m_piece; }
+	inline CHESSCOLOR GetColor() const { return m_color; }
+	inline CHESSHISTORY GetHistory() const { return m_history; }
+	void SetPiece(CHESSPIECE piece) { m_piece = piece; }
+	void SetColor(CHESSCOLOR color) { m_color = color; }
+	void SetHistory(CHESSHISTORY history) { m_history = history; }
 
-	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
+	/// @brief Returns the color opposite to the current one (white/black mode only)
+	/// @return Black if current is white, white if current is black, otherwise UNKNOWN
+	inline CHESSCOLOR GetColorOpposite() const {
+		const CHESSCOLOR clr = GetColor();
+		return (clr == CHESSCOLOR::BLACK) ? CHESSCOLOR::WHITE : (clr == CHESSCOLOR::WHITE ? CHESSCOLOR::BLACK : CHESSCOLOR::UNKNOWN);
+	}
 
-	//String toString(bool symbolic = true) const;
+	inline bool IsValid() const {
+		return GetPiece() != CHESSPIECE::UNKNOWN
+			&& GetColor() != CHESSCOLOR::UNKNOWN
+			&& GetHistory() != CHESSHISTORY::UNKNOWN;
+	}
+
+	bool operator==(const ChessPiece& other) const {
+		return m_color == other.m_color && m_piece == other.m_piece && m_history == other.m_history;
+	}
+
 private:
-	//void _initFromChar(char c);
+	CHESSPIECE m_piece = CHESSPIECE::UNKNOWN;
+	CHESSCOLOR m_color = CHESSCOLOR::UNKNOWN;
+	CHESSHISTORY m_history = CHESSHISTORY::NONE;
 };
+
+//struct ChessPiece {
+//	static char _pieceSymbols[];
+//
+//	// getters should be adjusted if bitness is changed
+//	uint8_t _piece : 4;
+//	uint8_t _color : 2;
+//	uint8_t _history : 1; // extra info flag - king/rook: was moved before; pawn: susceptible to en-passant
+//
+//	ChessPiece(CHESSPIECE piece = CHESSPIECE::UNKNOWN, CHESSCOLOR color = CHESSCOLOR::UNKNOWN, bool history = false)
+//		: _piece(static_cast<uint8_t>(piece)), _color(static_cast<uint8_t>(color)), _history(history) { }
+//	ChessPiece(const ChessPiece& piece) 
+//		: _piece(piece._piece), _color(piece._color), _history(piece._history) { }
+//	//ChessPiece(const String& s);
+//	//ChessPiece(char c);
+//	~ChessPiece() {}
+//
+//	void setPiece(CHESSPIECE piece) { _piece = static_cast<uint8_t>(piece); }
+//	void setColor(CHESSCOLOR color) { _color = static_cast<uint8_t>(color); }
+//	void setHistory(bool value) { _history = value; }
+//	inline CHESSPIECE getPiece() const { return static_cast<CHESSPIECE>(_piece == 0b00001111 ? -1 : _piece); }
+//	inline CHESSCOLOR getColor() const { return static_cast<CHESSCOLOR>(_color == 0b00000011 ? -1 : _color); }
+//	inline CHESSCOLOR getColorOpposite() const { CHESSCOLOR clr = getColor(); return (clr == CHESSCOLOR::BLACK) ? CHESSCOLOR::WHITE : (clr == CHESSCOLOR::WHITE ? CHESSCOLOR::BLACK : clr); }
+//	bool getHistory() const { return static_cast<bool>(_history); }
+//
+//	inline bool isValid() const { return getPiece() != CHESSPIECE::UNKNOWN && getColor() != CHESSCOLOR::UNKNOWN; }
+//
+//	bool operator==(const ChessPiece& other) const { return _color == other._color && _piece == other._piece; }
+//
+//	//String toString(bool symbolic = true) const;
+//private:
+//	//void _initFromChar(char c);
+//};
+
 // struct ChessPieceLocation {
 // 	int8_t _row : 4;
 // 	int8_t _col : 4;
