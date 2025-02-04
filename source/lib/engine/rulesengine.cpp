@@ -469,7 +469,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 		char cc = fenString[fenCursor];
 		if (cc == ' ')
 			break;
-		if (!IsDigit(cc))
+		if (!isDigit(cc))
 			return invalidate();
 		halfMoves += static_cast<char>(cc);
 	}
@@ -485,7 +485,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 		char cc = fenString[fenCursor];
 		if (cc == ' ')
 			break;
-		if (!IsDigit(cc))
+		if (!isDigit(cc))
 			return invalidate();
 		fullMoves += static_cast<char>(cc);
 	}
