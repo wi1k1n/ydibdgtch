@@ -50,6 +50,7 @@
 				<div id="output"></div>
 				<input type="text" id="inputBox" placeholder="Type a command..." autofocus style="width: 400px">
 				<button onclick="sendInput()">Send</button>
+				<button id="btnGetFen">GetFEN</button>
 			</div>
 			
 			<div class="float-child">
@@ -59,7 +60,18 @@
 		
 		<!-- <input type="text" id="inputLocation" style="width: 60px">
 		<button id="btnValidMoves">Show valid moves</button> -->
-	</div>	
+	</div>
+	
+    <div class="form-style-5">
+		<select name="slFens" id="slFens">
+		  <option value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Start</option>
+		  <option value="8/8/8/8/8/8/8/8 w - - 0 1">Clean</option>
+		  <option value="k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1" selected>Ambiguity</option>
+		  <option value="r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R">Ruy Lopez</option>
+		</select>
+		<input type="text" id="txbxFen" name="txbxFen", style="width: 500px">
+		<button id="btnSetFen">Set FEN</button>
+	  </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script>
     <script src="../webui_esp32_board/chessboard-1.0.0.min.js"></script>
@@ -69,6 +81,11 @@
 		const WHITE_SELECTED_COLOR = 'rgb(252, 176, 62)'
 		const BLACK_SELECTED_COLOR = 'rgb(165, 93, 21)'
     	document.getElementById('myBoard').setAttribute('style', 'width:'+BOARDSIZE+'px');
+
+		const INITIAL_FEN = document.getElementById('slFens').value;
+		$('#txbxFen').val(INITIAL_FEN);
+		$('#slFens').on('change', function() { $('#txbxFen').val($('#slFens').val()); });
+		$('#btnSetFen').on('click', function() { sendData(`setfen`, $('#txbxFen').val()); });
 		
 		var squareMouseOver = '';
 		function onMouseoverSquare(square, piece) {
@@ -142,15 +159,9 @@
 				}
 			}
 		};
-		ws.onopen = () => {
-			outputDiv.innerText += '[ws] Connection opened.\n';
-		};
-		ws.onerror = (event) => {
-			outputDiv.innerText += '[ws] Error: ' + event.data + '\n';
-		};
-		ws.onclose = () => {
-			outputDiv.innerText += '[ws] Connection closed.\n';
-		};
+		ws.onopen = () => { outputDiv.innerText += '[ws] Connection opened.\n'; };
+		ws.onerror = (event) => { outputDiv.innerText += '[ws] Error: ' + event.data + '\n'; };
+		ws.onclose = () => { outputDiv.innerText += '[ws] Connection closed.\n'; };
 		function sendInput() {
 			const input = inputBox.value.trim();
 			if (input) {
@@ -167,9 +178,7 @@
 			}
 			outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll
 		}
-		inputBox.addEventListener('keypress', (event) => {
-			if (event.key === 'Enter') sendInput();
-		});
+		inputBox.addEventListener('keypress', (event) => { if (event.key === 'Enter') sendInput(); });
 
 
 		
@@ -178,9 +187,9 @@
 			const location = squareMouseOver;
 			sendData(`validmoves`, `${location}`);
 		}
-		// document.querySelector('#btnValidMoves').addEventListener('click', async () => {
-		// 	ShowValidMoves();
-		// });
+		document.querySelector('#btnGetFen').addEventListener('click', async () => {
+			sendData(`getfen`);
+		});
 		document.addEventListener('keypress', (event) => {
 			if (event.key === 'q')
 				return ShowValidMoves();
