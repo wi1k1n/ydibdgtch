@@ -1,4 +1,9 @@
 {
+  "name": "webuiengine",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node ./tools/webui_engine/server.js ./_build/Debug/YDIBDGTCH.exe engineweb"
+  },
   "dependencies": {
     "express": "^4.21.2",
     "ws": "^8.18.0"
