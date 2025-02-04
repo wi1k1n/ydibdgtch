@@ -128,7 +128,7 @@ void ChessGameState::Set(const ChessPieceLocation& location, const ChessPiece& p
 	if (!location.IsOnBoard())
 		return;
 	if (piece.IsValid())
-		m_pieces.emplace(location, piece);
+ 		m_pieces.insert_or_assign(location, piece);
 	else
 		m_pieces.erase(location);
 }

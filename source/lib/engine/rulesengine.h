@@ -154,6 +154,10 @@ public:
 	void SetMoveInfo(CHESSMOVEINFO moveInfo) { m_moveInfo = moveInfo; }
 	void SetPromotionTarget(CHESSPIECE promotionTarget) { m_promotionTarget = promotionTarget; }
 
+	bool operator==(const ChessMoveLocation& other) const {
+		return ChessPieceLocation::operator==(other) && m_moveInfo == other.m_moveInfo && m_promotionTarget == other.m_promotionTarget;
+	}
+
 private:
 	CHESSMOVEINFO m_moveInfo = CHESSMOVEINFO::NONE;
 	CHESSPIECE m_promotionTarget = CHESSPIECE::UNKNOWN; // only used if m_moveInfo == CHESSMOVEINFO::PROMOTION
@@ -174,13 +178,13 @@ namespace std {
 template<>
 struct hash<ChessPieceLocation> {
 	size_t operator()(const ChessPieceLocation& other) const {
-		return hash<int8_t>()(other.GetRow()) ^ hash<int8_t>()(other.GetCol());
+		return hash<int8_t>()(other.GetRow() << 4) ^ hash<int8_t>()(other.GetCol());
 	}
 };
 template<>
 struct hash<CHESSPIECE> {
 	size_t operator()(const CHESSPIECE& other) const {
-		return hash<int8_t>()(static_cast<int8_t>(other));
+		return hash<uint8_t>()(static_cast<uint8_t>(other));
 	}
 };
 
