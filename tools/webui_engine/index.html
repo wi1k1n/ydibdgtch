@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ CLI Web Interface</title>
+	<link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+	<link rel="stylesheet" href="../webui_esp32_board/style.css">
+    <style>
+        body {
+			font-family: Arial, sans-serif;
+		}
+        #output { 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+            background: #222; 
+            color: #0f0; 
+            padding: 10px;
+            border-radius: 5px;
+            width: 600px;
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #444;
+			text-align: left;
+        }
+        input, button {
+            font-size: 16px;
+            padding: 5px;
+        }
+        .float-container {
+          border: 1px solid black;
+          margin: 1rem;
+          padding: 2rem 2rem;
+          text-align: center;
+        }
+        .float-child {
+          display: inline-block;
+          border: 1px solid red;
+          padding: 1rem 1rem;
+          vertical-align: middle;
+        } 
+    </style>
+</head>
+<body>
+    <h2>Live C++ CLI</h2>
+    <div class="form-style-5">
+		<div class="float-container form-style-5">
+			
+			<div class="float-child">
+				<div id="output"></div>
+				<input type="text" id="inputBox" placeholder="Type a command..." autofocus style="width: 400px">
+				<button onclick="sendInput()">Send</button>
+			</div>
+			
+			<div class="float-child">
+				<div id="myBoard"></div>
+			</div>
+		</div>
+		
+		<!-- <input type="text" id="inputLocation" style="width: 60px">
+		<button id="btnValidMoves">Show valid moves</button> -->
+	</div>	
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script>
+    <script src="../webui_esp32_board/chessboard-1.0.0.min.js"></script>
+    <script>
+		//////////////////////// Chessboard
+		const BOARDSIZE = 630;
+		const WHITE_SELECTED_COLOR = 'rgb(252, 176, 62)'
+		const BLACK_SELECTED_COLOR = 'rgb(165, 93, 21)'
+    	document.getElementById('myBoard').setAttribute('style', 'width:'+BOARDSIZE+'px');
+		
+		var squareMouseOver = '';
+		function onMouseoverSquare(square, piece) {
+			// console.log('Mouse over square:', square, piece);
+			squareMouseOver = square;
+		}
+		function onMouseoutSquare(square, piece) {
+			// console.log('Mouse out square:', square, piece);
+			squareMouseOver = '';
+		}
+		function onDragStart(source, piece, position, orientation) {
+			// console.log('Drag start:', source, piece, position, orientation);
+			// $('#inputLocation').val(source);
+		}
+		function onDrop(source, target, piece, newPos, oldPos, orientation) {
+			// console.log('Drop:', source, target, piece, newPos, oldPos, orientation);
+			// $('#inputLocation').val(target);
+			if (source === target) return;
+			sendData(`move`, `${source}:${target}`);
+		}
+		var config = {
+			draggable: true,
+			position: 'start',
+			// position: {},
+			// position: INITIAL_FEN,
+			onDragStart: onDragStart,
+			onDrop: onDrop,
+			// onSnapEnd: onSnapEnd
+			onMouseoutSquare: onMouseoutSquare,
+			onMouseoverSquare: onMouseoverSquare,
+		}
+      	var board = Chessboard('myBoard', config)
+		
+		function removeSquaresSelections () {
+			$('#myBoard .square-55d63').css('background', '')
+		}
+		function selectSquares (square) {
+			var $square = $('#myBoard .square-' + square)
+			var background = WHITE_SELECTED_COLOR
+			if ($square.hasClass('black-3c85d')) {
+				background = BLACK_SELECTED_COLOR
+			}
+			$square.css('background', background)
+		}
+
+		//////////////////////// Console
+        const outputDiv = document.getElementById('output');
+        const inputBox = document.getElementById('inputBox');
+        const ws = new WebSocket(`ws://localhost:3000`);
+        ws.onmessage = (event) => {
+            outputDiv.innerText += event.data + '\n';
+            outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll to the bottom
+
+			if (event.data.startsWith('error')) {
+				return;
+			}
+
+			if (event.data.startsWith('fen ')) {
+				const fen = event.data.substring('fen '.length);
+				board.position(fen.trim());
+				return;
+			}
+
+			if (event.data.startsWith('moves ')) {
+				removeSquaresSelections();
+				const moves = event.data.substring('moves '.length).split(';');
+				for (let i = 0; i < moves.length; i++) {
+					const move = moves[i].trim();
+					if (move === '') continue;
+					selectSquares(moves[i]);
+				}
+			}
+		};
+		ws.onopen = () => {
+			outputDiv.innerText += '[ws] Connection opened.\n';
+		};
+		ws.onerror = (event) => {
+			outputDiv.innerText += '[ws] Error: ' + event.data + '\n';
+		};
+		ws.onclose = () => {
+			outputDiv.innerText += '[ws] Connection closed.\n';
+		};
+		function sendInput() {
+			const input = inputBox.value.trim();
+			if (input) {
+				sendData(input);
+				inputBox.value = '';
+			}
+		}
+		function sendData(command, data = '') {
+			ws.send(`${command}`);
+			outputDiv.innerText += `> ${command}\n`;
+			if (data) {
+				ws.send(`${data}`);
+				outputDiv.innerText += `> ${data}\n`;
+			}
+			outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll
+		}
+		inputBox.addEventListener('keypress', (event) => {
+			if (event.key === 'Enter') sendInput();
+		});
+
+
+		
+		function ShowValidMoves() {
+			// const location = document.querySelector('#inputLocation').value;
+			const location = squareMouseOver;
+			sendData(`validmoves`, `${location}`);
+		}
+		// document.querySelector('#btnValidMoves').addEventListener('click', async () => {
+		// 	ShowValidMoves();
+		// });
+		document.addEventListener('keypress', (event) => {
+			if (event.key === 'q')
+				return ShowValidMoves();
+			if (event.key === 'c')
+				return removeSquaresSelections();
+		});
+    </script>
+</body>
+</html>
