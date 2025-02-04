@@ -28,3 +28,6 @@ using Array = std::vector<T>;
 
 template <typename KEY, typename VALUE>
 using Hashmap = std::unordered_map<KEY, VALUE>;
+
+template <typename T1, typename T2>
+using Pair = std::pair<T1, T2>;

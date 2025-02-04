@@ -24,6 +24,7 @@ enum class CHESSCOLOR : uint8_t {
 	YELLOW = 5,
 };
 
+// TODO: redundant as can be expressed by 2 bits (king castle, queen castle) and ChessPieceLocation (en-passant)
 enum class CHESSHISTORY : uint8_t {
 	UNKNOWN = 255,
 	NONE = 0,
@@ -39,7 +40,7 @@ enum class CHESSINITSTATE : uint8_t {
 
 enum class CHESSMOVEINFO : uint8_t {
 	UNKNOWN = 255,
-	NONE = 0,
+	NONE = 0, // ordinary move
 	TAKING = 1, // the move is taking another piece
 	CASTLING = 2, // the move is castling
 	PROMOTION = 3, // the move is pawn promotion
@@ -47,6 +48,7 @@ enum class CHESSMOVEINFO : uint8_t {
 
 const int8_t CHESSLOCATION_INVALID = -1;
 
+/// @brief Solely chess piece representation (without any location or game state data)
 class ChessPiece {
 public:
 	ChessPiece(
@@ -56,8 +58,6 @@ public:
 	)
 		: m_piece(piece), m_color(color), m_history(history) { }
 	ChessPiece(const ChessPiece& piece)
-		: m_piece(piece.m_piece), m_color(piece.m_color), m_history(piece.m_history) { }
-	ChessPiece(const ChessPiece&& piece) noexcept
 		: m_piece(piece.m_piece), m_color(piece.m_color), m_history(piece.m_history) { }
 	~ChessPiece() {}
 
@@ -100,12 +100,11 @@ private:
 	CHESSHISTORY m_history = CHESSHISTORY::NONE;
 };
 
+/// @brief Solely chess piece location representation (without any piece or game state data)
 class ChessPieceLocation {
 public:
 	ChessPieceLocation() = default;
 	ChessPieceLocation(const ChessPieceLocation& piece)
-		: m_row(piece.m_row), m_col(piece.m_col) {}
-	ChessPieceLocation(const ChessPieceLocation&& piece) noexcept
 		: m_row(piece.m_row), m_col(piece.m_col) {}
 	~ChessPieceLocation() {}
 
@@ -136,20 +135,37 @@ private:
 	int8_t m_col = CHESSLOCATION_INVALID;
 };
 
-#if 0 // temp
+/// @brief Same as ChessPieceLocation, but keeps additional move information
 class ChessMoveLocation : public ChessPieceLocation {
 public:
+	ChessMoveLocation() = default;
 	ChessMoveLocation(const ChessMoveLocation& piece)
 		: ChessPieceLocation(piece), m_moveInfo(piece.m_moveInfo), m_promotionTarget(piece.m_promotionTarget) {}
+	~ChessMoveLocation() {}
 
 	ChessMoveLocation(int8_t row, int8_t col, CHESSMOVEINFO moveInfo = CHESSMOVEINFO::NONE, CHESSPIECE promotionTarget = CHESSPIECE::UNKNOWN)
 		: ChessPieceLocation(row, col), m_moveInfo(moveInfo), m_promotionTarget(promotionTarget) {}
+
+	CHESSMOVEINFO GetMoveInfo() const { return m_moveInfo; }
+	CHESSPIECE GetPromotionTarget() const { return m_promotionTarget; }
+
+	void SetMoveInfo(CHESSMOVEINFO moveInfo) { m_moveInfo = moveInfo; }
+	void SetPromotionTarget(CHESSPIECE promotionTarget) { m_promotionTarget = promotionTarget; }
 
 private:
 	CHESSMOVEINFO m_moveInfo = CHESSMOVEINFO::NONE;
 	CHESSPIECE m_promotionTarget = CHESSPIECE::UNKNOWN; // only used if m_moveInfo == CHESSMOVEINFO::PROMOTION
 };
-#endif
+
+/// @brief Move representation (doesn't make any sense without a game state)
+struct ChessStateMove {
+	ChessPieceLocation from;
+	ChessMoveLocation to;
+
+	ChessStateMove() = default;
+	ChessStateMove(const ChessPieceLocation& from, const ChessMoveLocation& to)
+		: from(from), to(to) {}
+};
 
 namespace std {
 
@@ -168,7 +184,12 @@ struct hash<CHESSPIECE> {
 
 } // namespace std
 
+/// @brief The chess game state representation: keeps track of all the pieces on the board and other game state data
 class ChessGameState {
+public:
+	/// @brief Create a game state that is intentionally in the undefined/invalid state
+	static ChessGameState GetUndefinedState() { return ChessGameState(CHESSINITSTATE::UNKNOWN, CHESSCOLOR::UNKNOWN); }
+
 public:
 	ChessGameState(CHESSINITSTATE initState = CHESSINITSTATE::CLASSIC, CHESSCOLOR colorToMove = CHESSCOLOR::WHITE);
 	ChessGameState(const ChessGameState& other)
@@ -177,7 +198,37 @@ public:
 		: m_pieces(other.m_pieces), m_colorToMove(other.m_colorToMove), m_fullMoves(other.m_fullMoves), m_halfMoves(other.m_halfMoves) {}
 	~ChessGameState() {}
 
+	ChessGameState& operator=(const ChessGameState& other) {
+		m_pieces = other.m_pieces;
+		m_colorToMove = other.m_colorToMove;
+		m_fullMoves = other.m_fullMoves;
+		m_halfMoves = other.m_halfMoves;
+		return *this;
+	}
+	ChessGameState& operator=(const ChessGameState&& other) noexcept {
+		m_pieces = other.m_pieces;
+		m_colorToMove = other.m_colorToMove;
+		m_fullMoves = other.m_fullMoves;
+		m_halfMoves = other.m_halfMoves;
+		return *this;
+	}
+
 	ChessGameState(const String& fenString, bool allowPartial = true);
+
+	inline const Hashmap<ChessPieceLocation, ChessPiece>& GetPieces() const { return m_pieces; }
+
+	inline CHESSCOLOR GetColorToMove() const { return m_colorToMove; }
+	inline uint16_t GetFullMoves() const { return m_fullMoves; }
+	inline uint8_t GetHalfMoves() const { return m_halfMoves; }
+
+	void SetColorToMove(CHESSCOLOR color) { m_colorToMove = color; }
+	void SetFullMoves(uint16_t fullMoves) { m_fullMoves = fullMoves; }
+	void SetHalfMoves(uint8_t halfMoves) { m_halfMoves = halfMoves; }
+
+	bool IsLocationOccupied(const ChessPieceLocation& location) const;
+
+	ChessPieceLocation FindFirst(CHESSPIECE piece, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
+	ChessPieceLocation FindFirst(const ChessPiece& piece) const;
 
 	ChessPiece At(const ChessPieceLocation& location) const;
 	ChessPiece At(uint8_t row, uint8_t col) const;
@@ -191,6 +242,11 @@ public:
 	void Unset(const ChessPieceLocation& location);
 	void Unset(uint8_t row, uint8_t col);
 	void Unset(const String& location);
+
+	bool MakeMove(const ChessStateMove& move);
+	
+	/// @brief Switches the turn to the other player (white/black mode only)
+	void NextTurn();
 
 	String ToString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
 	String ToFEN() const;
@@ -211,66 +267,39 @@ private:
 	uint8_t m_halfMoves = 0;
 };
 
+/// @brief Virtual class for chess rules engine
+class ChessRulesEngine {
+public:
+	ChessRulesEngine() = default;
+	ChessRulesEngine(const ChessRulesEngine&) = delete;
+	void operator=(const ChessRulesEngine&) = delete;
 
-//
-//class ChessGameState {
-//	std::unordered_map<ChessPieceLocation, ChessPiece> _pieces; // TODO: convert into std::vector<ChessPiece> _pieces;
-//	CHESSCOLOR _colorToMove = CHESSCOLOR::WHITE;
-//	uint16_t _fullMoves = 1;
-//	uint8_t _halfMoves = 0;
-//public:
-//	ChessGameState(const CHESSINITIALSTATE& initState = CHESSINITIALSTATE::CLASSIC, const CHESSCOLOR& colorToMove = CHESSCOLOR::WHITE);
-//	ChessGameState(const ChessGameState& other);
-//	ChessGameState(const String& fenString, bool allowPartial = true);
-//
-//	/// @brief Create a game state that is intentionally in the undefined/invalid state
-//	static ChessGameState getUndefinedState() { return ChessGameState(CHESSINITIALSTATE::UNKNOWN, CHESSCOLOR::UNKNOWN); }
-//
-//	ChessPiece at(const ChessPieceLocation& location) const;
-//	ChessPiece at(uint8_t row, uint8_t col) const;
-//	ChessPiece at(uint8_t idx) const;
-//	ChessPiece at(const String& s) const; // only lower case!
-//	void set(const ChessPieceLocation& location, const ChessPiece& piece);
-//	void set(uint8_t row, uint8_t col, const ChessPiece& piece);
-//	void set(const String& location, const ChessPiece& piece);
-//	void set(const String& location, const String& piece);
-//	void unset(const ChessPieceLocation& location);
-//	void unset(uint8_t row, uint8_t col);
-//	void unset(const String& location);
-//
-//	bool makeMove(const ChessMove& move);
-//	void nextTurn();
-//
-//	ChessPieceLocation findFirst(CHESSPIECE piece, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
-//	ChessPieceLocation findFirst(const ChessPiece& piece) const;
-//
-//	// TODO: implement iterators
-//	const std::unordered_map<ChessPieceLocation, ChessPiece>& getPieces() const { return _pieces; }
-//	CHESSCOLOR getColorToMove() const { return _colorToMove; }
-//	uint16_t getFullMoves() const { return _fullMoves; }
-//	uint8_t getHalfMoves() const { return _halfMoves; }
-//	
-//	bool isLocationOccupied(const ChessPieceLocation& location) const;
-//
-//	bool isUndefined() const { return _colorToMove == CHESSCOLOR::UNKNOWN; } // TODO: more explicit way of undefined state?!
-//	
-//	String toString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
-//	String toFEN() const;
-//	bool operator==(const ChessGameState& other) const { return _pieces == other._pieces; }
-//	
-//private:
-//	void _fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
-//	void _fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
-//	void _fillCol(uint8_t col, CHESSPIECE piece, CHESSCOLOR color);
-//	void _fillCol(uint8_t col, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
-//
-//	/// @param allowPartial Still initialize even if FEN is incomplete
-//	/// @return tru on success, false if failed
-//	bool _initFromFEN(const String& fenString, bool allowPartial = true);
-//};
+	virtual ChessGameState GetStartingState() const = 0;
 
-//typedef std::pair<ChessGameState, ChessMove> ChessTurn;
-//
+	/// @brief All possible movements for a piece on the board. Takes into account possibility to take and inability to move to an occupied square. Doesn't check for the move's legality.
+	/// @param takesOnly Filters out all the non-taking moves
+	virtual Array<ChessMoveLocation> GetPossibleMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location, bool takesOnly = false) const = 0;
+
+	/// @brief Same as GetPossibleMovesForPiece(), but also cheks for moves legality (e.g. if moves are not possible due to opening king for a check)
+	virtual Array<ChessMoveLocation> GetValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const = 0;
+
+
+	virtual String ToString() const { return "ChessRulesEngine"; }
+};
+
+/// @brief Classic chess rules engine
+class ClassicChessRules : public ChessRulesEngine {
+public:
+	ChessGameState GetStartingState() const override { return ChessGameState(CHESSINITSTATE::CLASSIC, CHESSCOLOR::WHITE); }
+	Array<ChessMoveLocation> GetPossibleMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location, bool takesOnly = false) const override;
+	Array<ChessMoveLocation> GetValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const override;
+
+	bool IsCheck(const ChessGameState& state, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
+	bool IsMate(const ChessGameState& state, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
+	bool IsDraw(const ChessGameState& state) const;
+private:
+};
+
 //class ChessRulesEngine {
 //public:
 //	ChessRulesEngine() = default;
@@ -292,37 +321,5 @@ private:
 //	virtual String toString() const { return "ChessRulesEngine"; }
 //};
 //
-//class ClassicChessRules : public ChessRulesEngine {
-//public:
-//	// static ClassicChessRules& Get() { static ClassicChessRules instance; return instance; };
-//
-//	ChessGameState getStartingState() const override { return ChessGameState(); };
-//	std::vector<ChessMoveLocation> getPossibleMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location, bool takesOnly = false) const override;
-//	std::vector<ChessMoveLocation> getValidMovesForPiece(const ChessGameState& state, const ChessPieceLocation& location) const override;
-//
-//	// returns if "color" colored king is in check
-//	bool isCheck(const ChessGameState& state, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
-//	bool isMate(const ChessGameState& state, CHESSCOLOR color = CHESSCOLOR::UNKNOWN) const;
-//	bool isDraw(const ChessGameState& state) const;
-//
-//	String toString() const override { return "ClassicChessRules"; }
-//};
-
-
-// 
-// // Same as ChessPieceLocation with extra info (to keep CHessPieceLocation memory footprint small)
-// struct ChessMoveLocation : public ChessPieceLocation {
-// 	bool _take = 0;
-// 
-// 	ChessMoveLocation(const ChessMoveLocation& piece) : ChessPieceLocation(piece), _take(piece._take) { }
-// 	ChessMoveLocation(int8_t row, int8_t col, bool take = false) : ChessPieceLocation(row, col), _take(take) { }
-// 	ChessMoveLocation(std::pair<int8_t, int8_t> pair, bool take = false) : ChessPieceLocation(pair), _take(take) { }
-// 	
-// 	bool isTaking() const { return _take; }
-// 	
-// 	bool operator==(const ChessMoveLocation& other) const { return _row == other._row && _col == other._col && _take == other._take; }
-// };
-
-//typedef std::pair<ChessPieceLocation, ChessPieceLocation> ChessMove;
 
 #endif // RULESENGINE_H__
