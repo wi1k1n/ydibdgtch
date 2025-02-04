@@ -166,18 +166,20 @@ bool ChessGameState::MakeMove(const ChessStateMove& move) {
 		return false;
 
 	switch (move.to.GetMoveInfo()) {
+		case CHESSMOVEINFO::UNKNOWN:
+			//LOGLN("Unknown move: ", move.from.ToString(), " -> ", move.to.ToString(), ". Treating as ordinary");
 		case CHESSMOVEINFO::NONE:
-			LOGLN("Ordinary move: ", move.from.ToString(), " -> ", move.to.ToString());
+			//LOGLN("Ordinary move: ", move.from.ToString(), " -> ", move.to.ToString());
 			Set(move.to, piece);
 			Unset(move.from);
 			break;
 		case CHESSMOVEINFO::TAKING:
-			LOGLN("Taking move: ", move.from.ToString(), " -> ", move.to.ToString());
+			//LOGLN("Taking move: ", move.from.ToString(), " -> ", move.to.ToString());
 			Set(move.to, piece);
 			Unset(move.from);
 			break;
 		case CHESSMOVEINFO::CASTLING: {
-			LOGLN("Castling move: ", move.from.ToString(), " -> ", move.to.ToString());
+			//LOGLN("Castling move: ", move.from.ToString(), " -> ", move.to.ToString());
 			switch (piece.GetPiece()) {
 			case CHESSPIECE::KING:
 			{

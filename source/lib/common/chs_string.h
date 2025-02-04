@@ -17,6 +17,7 @@ public:
 	String(const char* s) : str(s ? s : "") {}
 	String(const char* s, unsigned int length) : str(s, length) {}
 	String(const String& s) : str(s.str) {}
+	String(const std::string& s) : str(s) {}
 
 	explicit String(char c) : str(1, c) {}
 	explicit String(unsigned char value, unsigned char base = 10) { convertFromNumber(value, base); }

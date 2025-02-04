@@ -145,6 +145,8 @@ public:
 
 	ChessMoveLocation(int8_t row, int8_t col, CHESSMOVEINFO moveInfo = CHESSMOVEINFO::NONE, CHESSPIECE promotionTarget = CHESSPIECE::UNKNOWN)
 		: ChessPieceLocation(row, col), m_moveInfo(moveInfo), m_promotionTarget(promotionTarget) {}
+	ChessMoveLocation(const String& s)
+		: ChessPieceLocation(s) {}
 
 	CHESSMOVEINFO GetMoveInfo() const { return m_moveInfo; }
 	CHESSPIECE GetPromotionTarget() const { return m_promotionTarget; }
