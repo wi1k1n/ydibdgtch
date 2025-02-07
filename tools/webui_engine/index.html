@@ -38,7 +38,20 @@
           border: 1px solid red;
           padding: 1rem 1rem;
           vertical-align: middle;
-        } 
+        }
+		.senseboard-led {
+			position: absolute;
+			top: 0;
+			right: 0;
+			width: 15px;
+			height: 15px;
+			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="grey"><circle cx="50" cy="50" r="50" /></svg>');
+			background-size: contain;
+			background-repeat: no-repeat;
+		}
+		.senseboard-led-active {
+			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="rgb(21, 255, 0)"><circle cx="50" cy="50" r="50" /></svg>');
+		}
     </style>
 </head>
 <body>
@@ -119,6 +132,11 @@
 		}
       	var board = Chessboard('myBoard', config)
 		
+		// Generate background image which has a red circle in the right top corner
+		{
+			$('#myBoard .square-55d63').append('<div id="circle" class="senseboard-led"></div>')
+		}
+
 		function removeSquaresSelections () {
 			$('#myBoard .square-55d63').css('background', '')
 		}
@@ -136,9 +154,7 @@
         const inputBox = document.getElementById('inputBox');
         const ws = new WebSocket(`ws://localhost:3000`);
         ws.onmessage = (event) => {
-            outputDiv.innerText += event.data + '\n';
-            outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll to the bottom
-
+			consoleLog(event.data);
 			if (event.data.startsWith('error')) {
 				return;
 			}
@@ -159,9 +175,9 @@
 				}
 			}
 		};
-		ws.onopen = () => { outputDiv.innerText += '[ws] Connection opened.\n'; };
-		ws.onerror = (event) => { outputDiv.innerText += '[ws] Error: ' + event.data + '\n'; };
-		ws.onclose = () => { outputDiv.innerText += '[ws] Connection closed.\n'; };
+		ws.onopen = () => { consoleLog('[ws] Connection opened.'); };
+		ws.onerror = (event) => { consoleLog('[ws] Error: ' + event.data); };
+		ws.onclose = () => { consoleLog('[ws] Connection closed.'); };
 		function sendInput() {
 			const input = inputBox.value.trim();
 			if (input) {
@@ -171,11 +187,14 @@
 		}
 		function sendData(command, data = '') {
 			ws.send(`${command}`);
-			outputDiv.innerText += `> ${command}\n`;
+			consoleLog(`> ${command}`);
 			if (data) {
 				ws.send(`${data}`);
-				outputDiv.innerText += `> ${data}\n`;
+				consoleLog(`> ${data}`);
 			}
+		}
+		function consoleLog(message) {
+			outputDiv.innerText += message + '\n';
 			outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll
 		}
 		inputBox.addEventListener('keypress', (event) => { if (event.key === 'Enter') sendInput(); });

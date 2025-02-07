@@ -1,5 +1,10 @@
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <filesystem>
+#include <chrono>
+#include <ctime>
+#include <windows.h>
 
 #include "rulesengine.h"
 #include "chs_string.h"
@@ -11,12 +16,15 @@ ChessGameState gameState;
 
 std::vector<std::string> split(const std::string& s, char seperator);
 
-void outError(const std::string& msg = "") {
-	std::cout << "error " << msg << std::endl;
-}
-
 bool startsWith(const std::string& s, const std::string& token) {
 	return s.find(token) == 0;
+}
+
+void sendCommand(const std::string& command, const std::string& data) {
+	std::cout << command << " " << data << std::endl;
+}
+void sendCommand(const std::string& command) {
+	std::cout << command << std::endl;
 }
 
 int runEngineWeb(int argc, char* argv[]) {
@@ -30,7 +38,7 @@ int runEngineWeb(int argc, char* argv[]) {
 		}
 
 		if (input == "ping") {
-			std::cout << "pong" << std::endl;
+			sendCommand("pong");
 			continue;
 		}
 
@@ -38,12 +46,12 @@ int runEngineWeb(int argc, char* argv[]) {
 			std::string fen;
 			std::getline(std::cin, fen);
 			gameState = ChessGameState(fen.c_str());
-			std::cout << "fen " << gameState.ToFEN() << std::endl;
+			sendCommand("fen", gameState.ToFEN().c_str());
 			continue;
 		}
 
 		if (input == "getfen") {
-			std::cout << "fen " << gameState.ToFEN() << std::endl;
+			sendCommand("fen", gameState.ToFEN().c_str());
 			continue;
 		}
 
@@ -53,7 +61,7 @@ int runEngineWeb(int argc, char* argv[]) {
 			
 			std::vector<std::string> parts = split(move, ':');
 			if (parts.size() != 2) {
-				outError("wrong move format");
+				sendCommand("error", "wrong move format");
 				continue;
 			}
 
@@ -62,11 +70,11 @@ int runEngineWeb(int argc, char* argv[]) {
 			ChessStateMove stateMove(from, to);
 
 			if (!gameState.MakeMove(stateMove)) {
-				outError("invalid move");
+				sendCommand("error", "invalid move");
 				continue;
 			}
 
-			std::cout << "fen " << gameState.ToFEN() << std::endl;
+			sendCommand("fen", gameState.ToFEN().c_str());
 			continue;
 		}
 
@@ -76,21 +84,39 @@ int runEngineWeb(int argc, char* argv[]) {
 
 			ChessPieceLocation loc(location.c_str());
 			std::vector<ChessMoveLocation> moves = gameRules.GetValidMovesForPiece(gameState, loc);
-			std::cout << "moves ";
+
+			std::ostringstream ss;
 			for (const auto& move : moves) {
-				std::cout << move.ToString() << ";";
+				ss << move.ToString() << ";";
 			}
-			std::cout << std::endl;
+			sendCommand("validmoves", ss.str());
 			continue;
 		}
 
-		outError("unknown command");
+		sendCommand("error", "unknown command");
 	}
 	return 0;
 }
 
+std::time_t getExecModificationTime() {
+	char exePathChars[MAX_PATH];
+	GetModuleFileNameA(NULL, exePathChars, MAX_PATH);
+	std::string exePath(exePathChars);
+
+	auto ftime = std::filesystem::last_write_time(exePath);
+	auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+		ftime - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now()
+	);
+
+	return std::chrono::system_clock::to_time_t(sctp);
+}
+
 int main(int argc, char* argv[]) {
-  std::cout << "|-- ydibdgtch --|" << std::endl;
+	std::time_t cftime = getExecModificationTime();
+	std::tm localTime;
+	localtime_s(&localTime, &cftime);
+
+  std::cout << "--|-- YDIBDGTCH [" << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << "] --|--" << std::endl;
 
 	if (argc < 2) {
 		std::cout << "Usage: " << argv[0] << " uci|engineweb|tests" << std::endl;
