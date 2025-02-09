@@ -332,7 +332,7 @@ void ChessGameState::fillCol(uint8_t col, const std::initializer_list<CHESSPIECE
 }
 
 bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
-	LOGLN("Loading from FEN: ", fenString);
+	//LOGLN("Loading from FEN: ", fenString);
 
 	bool minimallyInitialized = false;
 	auto invalidate = [&]() {
@@ -398,7 +398,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 			return invalidate();
 	}
 	minimallyInitialized = true;
-	LOGLN("1. Handle pieces placement part");
+	//LOGLN("1. Handle pieces placement part");
 
 	// 2. Color to move
 	if (++fenCursor >= fenString.length())
@@ -414,7 +414,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 	
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
 		return invalidate();
-	LOGLN("2. Color to move");
+	//LOGLN("2. Color to move");
 	
 	// 3. Castling options
 	if (fenCursor >= fenString.length())
@@ -431,7 +431,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 		if (castlingCharCount > 4)
 			return invalidate();
 	}
-	LOGLN("3. Castling options");
+	//LOGLN("3. Castling options");
 	
 	// 4. En-passant pawn
 	if (++fenCursor >= fenString.length())
@@ -460,7 +460,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 			invalidate();
 		pawn.SetHistory(CHESSHISTORY::MOVED); // TODO: fix this
 	}
-	LOGLN("4. En-passant pawn");
+	//LOGLN("4. En-passant pawn");
 	
 	// 5. Half-moves since last pawn advance
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
@@ -476,7 +476,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 		halfMoves += static_cast<char>(cc);
 	}
 	m_halfMoves = (uint8_t)halfMoves.toInt();
-	LOGLN("5. Half-moves since last pawn advance");
+	//LOGLN("5. Half-moves since last pawn advance");
 	
 	// 6. Full-moves since start
 	if (fenCursor >= fenString.length() || fenString[fenCursor++] != ' ')
@@ -494,7 +494,7 @@ bool ChessGameState::initFromFEN(const String& fenString, bool allowPartial) {
 	m_fullMoves = (uint8_t)fullMoves.toInt();
 	if (m_fullMoves == 0)
 		return invalidate();
-	LOGLN("6. Full-moves since start");
+	//LOGLN("6. Full-moves since start");
 	
 	return true;
 }

@@ -6,13 +6,17 @@
 #include <ctime>
 #include <windows.h>
 
-#include "rulesengine.h"
 #include "chs_string.h"
+#include "rulesengine.h"
+#include "stateresolver.h"
+#include "senseboard.h"
 
 bool g_CancelRequested = false;
 
 ClassicChessRules gameRules;
 ChessGameState gameState;
+StateResolver stateResolver;
+SenseBoardState senseBoardState;
 
 std::vector<std::string> split(const std::string& s, char seperator);
 
@@ -55,6 +59,19 @@ int runEngineWeb(int argc, char* argv[]) {
 			continue;
 		}
 
+		if (input == "getsenseboard") {
+			sendCommand("senseboard", senseBoardState.ToString().c_str());
+			continue;
+		}
+
+		if (input == "setsenseboard") {
+			std::string senseboardStr;
+			std::getline(std::cin, senseboardStr);
+			senseBoardState = SenseBoardState(senseboardStr.c_str());
+			sendCommand("ok");
+			continue;
+		}
+
 		if (input == "move") {
 			std::string move;
 			std::getline(std::cin, move);
@@ -91,6 +108,23 @@ int runEngineWeb(int argc, char* argv[]) {
 			}
 			sendCommand("validmoves", ss.str());
 			continue;
+		}
+
+		// Playing commands
+		{
+			if (input == "start") {
+				stateResolver.Init(gameState, SenseBoardState());
+				sendCommand("ok");
+				continue;
+			}
+
+			if (input == "senseboardupdate") {
+			}
+			
+			if (input == "whosturn") {
+				sendCommand(gameState.GetColorToMove() == CHESSCOLOR::WHITE ? "white" : "black");
+				continue;
+			}
 		}
 
 		sendCommand("error", "unknown command");

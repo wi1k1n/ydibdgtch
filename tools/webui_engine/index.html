@@ -17,7 +17,7 @@
             color: #0f0; 
             padding: 10px;
             border-radius: 5px;
-            width: 600px;
+            width: 500px;
             height: 500px;
             overflow-y: auto;
             border: 1px solid #444;
@@ -43,8 +43,8 @@
 			position: absolute;
 			top: 0;
 			right: 0;
-			width: 15px;
-			height: 15px;
+			width: 25px;
+			height: 25px;
 			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="grey"><circle cx="50" cy="50" r="50" /></svg>');
 			background-size: contain;
 			background-repeat: no-repeat;
@@ -61,9 +61,13 @@
 			
 			<div class="float-child">
 				<div id="output"></div>
+				<br />
 				<input type="text" id="inputBox" placeholder="Type a command..." autofocus style="width: 400px">
 				<button onclick="sendInput()">Send</button>
+				<button onclick="clearConsole()">Clear</button>
+				<br />
 				<button id="btnGetFen">GetFEN</button>
+				<button id="btnRestartGame">Restart</button>
 			</div>
 			
 			<div class="float-child">
@@ -77,10 +81,10 @@
 	
     <div class="form-style-5">
 		<select name="slFens" id="slFens">
-		  <option value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Start</option>
-		  <option value="8/8/8/8/8/8/8/8 w - - 0 1">Clean</option>
-		  <option value="k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1" selected>Ambiguity</option>
-		  <option value="r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R">Ruy Lopez</option>
+		  <option value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1|1111111111111111000000000000000000000000000000001111111111111111">Start</option>
+		  <option value="8/8/8/8/8/8/8/8 w - - 0 1|0000000000000000000000000000000000000000000000000000000000000000">Clean</option>
+		  <option value="k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1|0000000001000001000100000010000000000000000000000000000010100000" selected>Ambiguity</option>
+		  <option value="r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R|1111100111110111000001000000100001001000001000001111011110111111">Ruy Lopez</option>
 		</select>
 		<input type="text" id="txbxFen" name="txbxFen", style="width: 500px">
 		<button id="btnSetFen">Set FEN</button>
@@ -90,7 +94,7 @@
     <script src="../webui_esp32_board/chessboard-1.0.0.min.js"></script>
     <script>
 		//////////////////////// Chessboard
-		const BOARDSIZE = 630;
+		const BOARDSIZE = 500;
 		const WHITE_SELECTED_COLOR = 'rgb(252, 176, 62)'
 		const BLACK_SELECTED_COLOR = 'rgb(165, 93, 21)'
     	document.getElementById('myBoard').setAttribute('style', 'width:'+BOARDSIZE+'px');
@@ -98,7 +102,12 @@
 		const INITIAL_FEN = document.getElementById('slFens').value;
 		$('#txbxFen').val(INITIAL_FEN);
 		$('#slFens').on('change', function() { $('#txbxFen').val($('#slFens').val()); });
-		$('#btnSetFen').on('click', function() { sendData(`setfen`, $('#txbxFen').val()); });
+		$('#btnSetFen').on('click', function() {
+			const valParts = $('#txbxFen').val().split('|');
+			sendData(`setfen`, valParts[0]);
+			sendData(`setsenseboard`, valParts[1]);
+			senseboardFromString(valParts[1]);
+		});
 		
 		var squareMouseOver = '';
 		function onMouseoverSquare(square, piece) {
@@ -134,7 +143,15 @@
 		
 		// Generate background image which has a red circle in the right top corner
 		{
-			$('#myBoard .square-55d63').append('<div id="circle" class="senseboard-led"></div>')
+			$('#myBoard .square-55d63').each(function() {
+				const squareLocationSymbolic = $(this).attr('id').split('-')[0].toLowerCase();
+				$(this).append(`<div id="senseboard-led-${squareLocationSymbolic}" class="senseboard-led"></div>`);
+			});
+		}
+		function toggleSenseboardLed(square) {
+			const $led = $('#myBoard .square-' + square + ' .senseboard-led');
+			$led.toggleClass('senseboard-led-active');
+			sendData(`setsenseboard`, senseboardToString());
 		}
 
 		function removeSquaresSelections () {
@@ -148,6 +165,33 @@
 			}
 			$square.css('background', background)
 		}
+		
+		function senseboardToString() {
+			const states = Array(64).fill('1');
+			$('#myBoard .senseboard-led').each(function() {
+				const squareLocationSymbolic = $(this).parent().attr('id').split('-')[0].toLowerCase();
+				const rowNumeric = parseInt(squareLocationSymbolic[1]) - 1;
+				const colNumeric = squareLocationSymbolic.charCodeAt(0) - 'a'.charCodeAt(0);
+				const isActive = $(this).hasClass('senseboard-led-active');
+
+				states[rowNumeric * 8 + colNumeric] = isActive ? '1' : '0';
+			});
+			return states.join('');
+		}
+		function senseboardFromString(sensboardString) {
+			$('#myBoard .senseboard-led').each(function() {
+				const squareLocationSymbolic = $(this).parent().attr('id').split('-')[0].toLowerCase();
+				const rowNumeric = parseInt(squareLocationSymbolic[1]) - 1;
+				const colNumeric = squareLocationSymbolic.charCodeAt(0) - 'a'.charCodeAt(0);
+				const isActive = sensboardString[rowNumeric * 8 + colNumeric] === '1';
+
+				if (isActive) {
+					$(this).addClass('senseboard-led-active');
+				} else {
+					$(this).removeClass('senseboard-led-active');
+				}
+			});
+		}
 
 		//////////////////////// Console
         const outputDiv = document.getElementById('output');
@@ -155,7 +199,7 @@
         const ws = new WebSocket(`ws://localhost:3000`);
         ws.onmessage = (event) => {
 			consoleLog(event.data);
-			if (event.data.startsWith('error')) {
+			if (event.data.startsWith('error') || event.data.startsWith('ok') || event.data.startsWith('info')) {
 				return;
 			}
 
@@ -163,6 +207,10 @@
 				const fen = event.data.substring('fen '.length);
 				board.position(fen.trim());
 				return;
+			}
+
+			if (event.data.startsWith('senseboard ')) {
+
 			}
 
 			if (event.data.startsWith('moves ')) {
@@ -197,23 +245,31 @@
 			outputDiv.innerText += message + '\n';
 			outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll
 		}
+		function clearConsole() {
+			outputDiv.innerText = '';
+		}
 		inputBox.addEventListener('keypress', (event) => { if (event.key === 'Enter') sendInput(); });
 
 
 		
-		function ShowValidMoves() {
-			// const location = document.querySelector('#inputLocation').value;
-			const location = squareMouseOver;
+		function ShowValidMoves(location) {
 			sendData(`validmoves`, `${location}`);
 		}
 		document.querySelector('#btnGetFen').addEventListener('click', async () => {
 			sendData(`getfen`);
 		});
+		document.querySelector('#btnRestartGame').addEventListener('click', async () => {
+			sendData(`setfen`, board.fen());
+			sendData(`setsenseboard`, senseboardToString());
+			sendData(`start`);
+		});
 		document.addEventListener('keypress', (event) => {
 			if (event.key === 'q')
-				return ShowValidMoves();
+				return ShowValidMoves(squareMouseOver);
 			if (event.key === 'c')
 				return removeSquaresSelections();
+			if (event.key === 'w')
+				return toggleSenseboardLed(squareMouseOver);
 		});
     </script>
 </body>
