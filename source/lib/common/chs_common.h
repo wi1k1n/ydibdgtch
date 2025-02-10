@@ -2,6 +2,7 @@
 
 #ifdef TARGET_WIN
 #include <iostream>
+#include <cassert>
 #define __LOGVAL(x) std::cout << x
 #define __LOGVALLN(x) std::cout << x << std::endl
 #else

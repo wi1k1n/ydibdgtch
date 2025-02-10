@@ -297,7 +297,7 @@ void printGraph(const CGSGraph& graph) {
 	std::cout << "Graph:" << std::endl;
 	Hashmap<CGSNode*, int> ids;
 	graph.Traverse(0, [&](CGSNode* node, int level) {
-		const int id = ids.size();
+		const size_t id = ids.size();
 		ids[node] = id;
 		std::string parentStr = node->GetParent() ? std::to_string(ids[node->GetParent()]) : "nullptr";
 		std::cout << "[" << id << "] lvl=" << level << ": (" << parentStr << ") " << node->GetState().state.ToFEN() << std::endl;

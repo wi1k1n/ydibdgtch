@@ -83,23 +83,22 @@ public:
 	bool RemoveNodes(const Array<CGSNode*>& nodes);
 
 	void GetNodesAtLevel(uint16_t level, Array<CGSNode*>& outNodes) const;
-
 	void Traverse(int startDepthLevel, Function<bool(CGSNode*, int)> callback) const;
 
 private:
 	UniquePtr<CGSNode> m_root;
 };
 
-//class StateResolver {
-//public:
-//	StateResolver() = default;
-//
-//	void Init(const ChessGameState& initState, const SenseBoardState& boardState);
-//
-//	void UpdateBoardState(const SenseBoardState& boardState);
-//	void GetPossibleGamestates(Array<CGSState>& outStates);
-//
-//private:
-//	Array<SenseBoardState> m_boardStates;
-//	CGSGraph m_graph;
-//};
+class StateResolver {
+public:
+	StateResolver() = default;
+
+	void Init(const ChessGameState& initState, const SenseBoardState& boardState);
+
+	void UpdateBoardState(const SenseBoardState& boardState);
+	void GetPossibleGamestates(Array<CGSState>& outStates);
+
+private:
+	Array<SenseBoardState> m_boardStates;
+	CGSGraph m_graph;
+};
