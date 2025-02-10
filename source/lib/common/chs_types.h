@@ -24,6 +24,7 @@ inline bool isHexadecimalDigit(char c) { return std::isxdigit(c); }
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
+#include <memory>
 
 template <typename T>
 using Array = std::vector<T>;
@@ -39,3 +40,6 @@ using Pair = std::pair<T1, T2>;
 
 template <typename T>
 using Function = std::function<T>;
+
+template <typename T>
+using UniquePtr = std::unique_ptr<T>;

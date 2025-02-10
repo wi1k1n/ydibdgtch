@@ -33,11 +33,16 @@ public:
 		: m_state(state), m_parent(parent), m_children(children) {}
 
 	const CGSState& GetState() const { return m_state; }
-	const Array<CGSNode>& GetChildren() const { return m_children; }
+	Array<CGSNode*> GetChildren() const {
+		Array<CGSNode*> children;
+		for (const auto& child : m_children)
+			children.push_back(child.get());
+		return children;
+	}
 	const CGSNode* GetParent() const { return m_parent; }
 	CGSNode* GetParent() { return m_parent; }
 
-	void AddChild(const CGSNode& child) { m_children.push_back(child); }
+	void AddChild(const CGSNode& child) { m_children.push_back(MakeUniquePtr<CGSNode>(child)); }
 	bool RemoveChild(const CGSNode& child) {
 		auto it = std::find(m_children.begin(), m_children.end(), child);
 		if (it != m_children.end()) {
@@ -54,7 +59,7 @@ public:
 private:
 	CGSState m_state;
 	
-	Array<CGSNode> m_children;
+	Array<UniquePtr<CGSNode>> m_children;
 	CGSNode* m_parent = nullptr;
 };
 

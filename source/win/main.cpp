@@ -24,7 +24,20 @@ bool startsWith(const std::string& s, const std::string& token) {
 
 bool g_CancelRequested = false;
 bool g_isUISimulated = false;
+std::vector<std::string> g_Commands;
 
+std::string readLine() {
+	if (g_isUISimulated) {
+		if (!g_Commands.empty()) {
+			std::string command = g_Commands[0];
+			g_Commands.erase(g_Commands.begin());
+			return command;
+		}
+	}
+	std::string line;
+	std::getline(std::cin, line);
+	return line;
+}
 void sendCommand(const std::string& command, const std::string& data) {
 	std::cout << command << " " << data << std::endl;
 }
@@ -35,8 +48,8 @@ void sendCommand(const std::string& command) {
 int runEngineWeb(int argc, char* argv[]) {
 	while (!g_CancelRequested) {
 		std::string input;
-		std::getline(std::cin, input);
-		
+		input = readLine();
+
 		if (input == "quit") {
 			g_CancelRequested = true;
 			break;
@@ -49,7 +62,7 @@ int runEngineWeb(int argc, char* argv[]) {
 
 		if (input == "setfen") {
 			std::string fen;
-			std::getline(std::cin, fen);
+			fen = readLine();
 			gameState = ChessGameState(fen.c_str());
 			sendCommand("fen", gameState.ToFEN().c_str());
 			continue;
@@ -72,7 +85,7 @@ int runEngineWeb(int argc, char* argv[]) {
 
 		if (input == "setsenseboard") {
 			std::string senseboardStr;
-			std::getline(std::cin, senseboardStr);
+			senseboardStr = readLine();
 			senseBoardState = SenseBoardState(senseboardStr.c_str());
 			sendCommand("ok");
 			continue;
@@ -80,8 +93,8 @@ int runEngineWeb(int argc, char* argv[]) {
 
 		if (input == "changepiecelocation") {
 			std::string move;
-			std::getline(std::cin, move);
-			
+			move = readLine();
+
 			std::vector<std::string> parts = split(move, ':');
 			if (parts.size() != 2) {
 				sendCommand("error", "wrong move format");
@@ -106,7 +119,7 @@ int runEngineWeb(int argc, char* argv[]) {
 
 		if (input == "validmoves") {
 			std::string location;
-			std::getline(std::cin, location);
+			location = readLine();
 
 			ChessPieceLocation loc(location.c_str());
 			std::vector<ChessMoveLocation> moves = gameRules.GetValidMovesForPiece(gameState, loc);
@@ -129,7 +142,7 @@ int runEngineWeb(int argc, char* argv[]) {
 
 			if (input == "senseboardupdate" || input == "sbu") {
 				std::string senseboardStr;
-				std::getline(std::cin, senseboardStr);
+				senseboardStr = readLine();
 
 				SenseBoardState state;
 				if (senseboardStr.length() != 64) {
@@ -220,9 +233,13 @@ int main(int argc, char* argv[]) {
 
 	if (command == "simulateengineweb") {
 		g_isUISimulated = true;
+		g_Commands.push_back("sbu");
+		g_Commands.push_back("b2");
+
 		gameState = ChessGameState("k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1");
 		senseBoardState = SenseBoardState("0000000001000001000100000010000000000000000000000000000010100000");
 		stateResolver.Init(gameState, senseBoardState);
+
 		std::cout << gameState.ToString() << std::endl;
 		return runEngineWeb(argc, argv);
 	}
