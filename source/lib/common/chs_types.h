@@ -43,3 +43,13 @@ using Function = std::function<T>;
 
 template <typename T>
 using UniquePtr = std::unique_ptr<T>;
+
+template <typename T, typename... Args>
+auto MakeUniquePtr(Args&&... args) -> decltype(std::make_unique<T>(std::forward<Args>(args)...)) {
+	return std::make_unique<T>(std::forward<Args>(args)...);
+}
+
+template <typename T>
+auto Move(T&& t) -> decltype(std::move(t)) {
+	return std::move(t);
+}

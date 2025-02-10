@@ -28,9 +28,8 @@ template<> struct std::hash<CGSState> {
 class CGSNode {
 public:
 	CGSNode() = default;
-
-	CGSNode(const CGSState& state, CGSNode* parent = nullptr, const Array<CGSNode>& children = Array<CGSNode>())
-		: m_state(state), m_parent(parent), m_children(children) {}
+	CGSNode(const CGSState& state, CGSNode* parent)
+		: m_state(state), m_parent(parent) {}
 
 	const CGSState& GetState() const { return m_state; }
 	Array<CGSNode*> GetChildren() const {
@@ -39,67 +38,68 @@ public:
 			children.push_back(child.get());
 		return children;
 	}
-	const CGSNode* GetParent() const { return m_parent; }
-	CGSNode* GetParent() { return m_parent; }
+	CGSNode* GetParent() const { return m_parent; }
 
-	void AddChild(const CGSNode& child) { m_children.push_back(MakeUniquePtr<CGSNode>(child)); }
-	bool RemoveChild(const CGSNode& child) {
-		auto it = std::find(m_children.begin(), m_children.end(), child);
-		if (it != m_children.end()) {
-			m_children.erase(it);
-			return true;
-		}
-		return false;
+	void AddChild(CGSNode&& child) {
+		child.m_parent = this;
+		m_children.push_back(MakeUniquePtr<CGSNode>(Move(child)));
+	}
+	bool RemoveChild(CGSNode* child) {
+		auto it = std::find_if(m_children.begin(), m_children.end(), [&](const auto& c) { return c.get() == child; });
+		if (it == m_children.end())
+			return false;
+		m_children.erase(it);
+		return true;
 	}
 
-	bool operator==(const CGSNode& other) const {
-		return m_state == other.m_state && m_parent == other.m_parent && m_children == other.m_children;
-	}
+	//bool operator==(const CGSNode& other) const {
+	//	return m_state == other.m_state && m_children == other.m_children;
+	//}
 
 private:
 	CGSState m_state;
-	
 	Array<UniquePtr<CGSNode>> m_children;
 	CGSNode* m_parent = nullptr;
 };
 
-template<> struct std::hash<CGSNode> {
-	size_t operator()(const CGSNode& other) const {
-		return std::hash<CGSState>()(other.GetState()) ^ std::hash<size_t>()(reinterpret_cast<size_t>(other.GetParent()));
-	}
-};
+//template<> struct std::hash<CGSNode> {
+//	size_t operator()(const CGSNode& other) const {
+//		return std::hash<CGSState>()(other.GetState()) ^ std::hash<size_t>()(reinterpret_cast<size_t>(other.GetParent()));
+//	}
+//};
 
 class CGSGraph {
 public:
 	CGSGraph() = default;
 
 	void Init(const ChessGameState& initState) {
-		m_root = CGSState(initState);
+		m_root = MakeUniquePtr<CGSNode>(CGSNode(initState, m_root.get()));
 	}
 
-	void AddNode(CGSNode& node);
-	bool RemoveNode(CGSNode& node);
-	bool RemoveNodes(const Array<CGSNode>& nodes);
+	CGSNode* GetRoot() const { return m_root.get(); }
 
-	void GetNodesAtLevel(uint16_t level, Array<CGSNode>& outNodes);
+	void AddNode(CGSNode&& node, CGSNode* parent);
+	bool RemoveNode(CGSNode* node);
+	bool RemoveNodes(const Array<CGSNode*>& nodes);
+
+	void GetNodesAtLevel(uint16_t level, Array<CGSNode*>& outNodes) const;
+
+	void Traverse(int startDepthLevel, Function<bool(CGSNode*, int)> callback) const;
 
 private:
-	void TraverseBFS(int level, Function<bool(CGSNode&, int)> callback);
-
-private:
-	CGSNode m_root;
+	UniquePtr<CGSNode> m_root;
 };
 
-class StateResolver {
-public:
-	StateResolver() = default;
-
-	void Init(const ChessGameState& initState, const SenseBoardState& boardState);
-
-	void UpdateBoardState(const SenseBoardState& boardState);
-	void GetPossibleGamestates(Array<CGSState>& outStates);
-
-private:
-	Array<SenseBoardState> m_boardStates;
-	CGSGraph m_graph;
-};
+//class StateResolver {
+//public:
+//	StateResolver() = default;
+//
+//	void Init(const ChessGameState& initState, const SenseBoardState& boardState);
+//
+//	void UpdateBoardState(const SenseBoardState& boardState);
+//	void GetPossibleGamestates(Array<CGSState>& outStates);
+//
+//private:
+//	Array<SenseBoardState> m_boardStates;
+//	CGSGraph m_graph;
+//};

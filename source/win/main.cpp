@@ -13,7 +13,7 @@
 
 ClassicChessRules gameRules;
 ChessGameState gameState;
-StateResolver stateResolver;
+//StateResolver stateResolver;
 SenseBoardState senseBoardState;
 
 std::vector<std::string> split(const std::string& s, char seperator);
@@ -135,7 +135,7 @@ int runEngineWeb(int argc, char* argv[]) {
 		// Playing commands
 		{
 			if (input == "start") {
-				stateResolver.Init(gameState, senseBoardState);
+				//stateResolver.Init(gameState, senseBoardState);
 				sendCommand("ok");
 				continue;
 			}
@@ -156,10 +156,10 @@ int runEngineWeb(int argc, char* argv[]) {
 				} else {
 					state = SenseBoardState(senseboardStr.c_str());
 				}
-				stateResolver.UpdateBoardState(state);
+				//stateResolver.UpdateBoardState(state);
 
 				Array<CGSState> possibleGameStates;
-				stateResolver.GetPossibleGamestates(possibleGameStates);
+				//stateResolver.GetPossibleGamestates(possibleGameStates);
 
 				if (possibleGameStates.size() > 1) {
 					sendCommand("info", "multiple possible gamestates");
@@ -171,7 +171,7 @@ int runEngineWeb(int argc, char* argv[]) {
 					continue;
 				}
 
-				gameState = possibleGameStates[0].state;
+				//gameState = possibleGameStates[0].state;
 
 				if (g_isUISimulated)
 					std::cout << gameState.ToString() << std::endl;
@@ -204,17 +204,19 @@ std::time_t getExecModificationTime() {
 	return std::chrono::system_clock::to_time_t(sctp);
 }
 
-#include <bitset>
-int main(int argc, char* argv[]) {
-	uint8_t b = 0b10000010;
-	std::cout << std::bitset<8>(((b * 0x0802 & 0x22110) | (b * 0x8020 & 0x88440)) * 0x10101 >> 16) << std::endl;
+void testCGSGraph();
 
-
+void showHelloPreambule() {
 	std::time_t cftime = getExecModificationTime();
 	std::tm localTime;
 	localtime_s(&localTime, &cftime);
-
   std::cout << "--|-- YDIBDGTCH [" << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << "] --|--" << std::endl;
+}
+
+int main(int argc, char* argv[]) {
+	showHelloPreambule();
+
+	testCGSGraph();
 
 	if (argc < 2) {
 		std::cout << "Usage: " << argv[0] << " uci|engineweb|tests" << std::endl;
@@ -238,7 +240,7 @@ int main(int argc, char* argv[]) {
 
 		gameState = ChessGameState("k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1");
 		senseBoardState = SenseBoardState("0000000001000001000100000010000000000000000000000000000010100000");
-		stateResolver.Init(gameState, senseBoardState);
+		//stateResolver.Init(gameState, senseBoardState);
 
 		std::cout << gameState.ToString() << std::endl;
 		return runEngineWeb(argc, argv);
@@ -289,4 +291,47 @@ std::vector<std::string> split(const std::string& s, char seperator) {
 	output.push_back(s.substr(prev_pos, pos - prev_pos)); // Last word
 
 	return output;
+}
+
+void printGraph(const CGSGraph& graph) {
+	std::cout << "Graph:" << std::endl;
+	Hashmap<CGSNode*, int> ids;
+	graph.Traverse(0, [&](CGSNode* node, int level) {
+		const int id = ids.size();
+		ids[node] = id;
+		std::string parentStr = node->GetParent() ? std::to_string(ids[node->GetParent()]) : "nullptr";
+		std::cout << "[" << id << "] lvl=" << level << ": (" << parentStr << ") " << node->GetState().state.ToFEN() << std::endl;
+		return true;
+	});
+}
+
+void testCGSGraph() {
+	CGSGraph graph;
+	
+	{
+		CGSNode node(CGSState(ChessGameState(CHESSINITSTATE::CLASSIC, CHESSCOLOR::BLACK)), nullptr);
+		graph.AddNode(Move(node), graph.GetRoot());
+	}
+
+	{
+		CGSNode node(CGSState(ChessGameState(CHESSINITSTATE::CLASSIC, CHESSCOLOR::WHITE)), nullptr);
+		graph.AddNode(Move(node), graph.GetRoot());
+	}
+
+	{
+		Array<CGSNode*> nodes;
+		graph.GetNodesAtLevel(1, nodes);
+
+		{
+			CGSNode node(CGSState(ChessGameState(CHESSINITSTATE::EMPTY, CHESSCOLOR::BLACK)), nullptr);
+			graph.AddNode(Move(node), nodes[0]);
+		}
+
+		{
+			CGSNode node(CGSState(ChessGameState(CHESSINITSTATE::EMPTY, CHESSCOLOR::WHITE)), nullptr);
+			graph.AddNode(Move(node), nodes[0]);
+		}
+	}
+
+	printGraph(graph);
 }
