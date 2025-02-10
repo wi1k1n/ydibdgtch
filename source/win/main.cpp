@@ -204,7 +204,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (command == "simulateengineweb") {
-		std::cout << myLocation.ToString() << std::endl;
 		g_isUISimulated = true;
 		gameState = ChessGameState("k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1");
 		senseBoardState = SenseBoardState("0000000001000001000100000010000000000000000000000000000010100000");
