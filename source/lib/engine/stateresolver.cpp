@@ -191,3 +191,11 @@ void StateResolver::UpdateBoardState(const SenseBoardState& boardState) {
 		nodesToRemove.push_back(lastLevelNodes[invalidNodeIdx]);
 	m_graph.RemoveNodes(nodesToRemove);
 }
+
+void StateResolver::GetPossibleGamestates(Array<CGSState>& outStates) {
+	outStates.clear();
+	Array<CGSNode> lastLevelNodes;
+	m_graph.GetNodesAtLevel((uint16_t)(m_boardStates.size() - 1), lastLevelNodes);
+	for (const CGSNode& node : lastLevelNodes)
+		outStates.push_back(node.GetState().state);
+}

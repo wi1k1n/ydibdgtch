@@ -145,6 +145,21 @@ int runEngineWeb(int argc, char* argv[]) {
 				}
 				stateResolver.UpdateBoardState(state);
 
+				Array<CGSState> possibleGameStates;
+				stateResolver.GetPossibleGamestates(possibleGameStates);
+
+				if (possibleGameStates.size() > 1) {
+					sendCommand("info", "multiple possible gamestates");
+					continue;
+				}
+
+				if (possibleGameStates.empty()) {
+					sendCommand("info", "no possible gamestates");
+					continue;
+				}
+
+				gameState = possibleGameStates[0].state;
+
 				if (g_isUISimulated)
 					std::cout << gameState.ToString() << std::endl;
 				else

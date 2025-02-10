@@ -92,6 +92,7 @@ public:
 	void Init(const ChessGameState& initState, const SenseBoardState& boardState);
 
 	void UpdateBoardState(const SenseBoardState& boardState);
+	void GetPossibleGamestates(Array<CGSState>& outStates);
 
 private:
 	Array<SenseBoardState> m_boardStates;
