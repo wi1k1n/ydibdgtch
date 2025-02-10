@@ -11,8 +11,6 @@
 #include "stateresolver.h"
 #include "senseboard.h"
 
-bool g_CancelRequested = false;
-
 ClassicChessRules gameRules;
 ChessGameState gameState;
 StateResolver stateResolver;
@@ -23,6 +21,9 @@ std::vector<std::string> split(const std::string& s, char seperator);
 bool startsWith(const std::string& s, const std::string& token) {
 	return s.find(token) == 0;
 }
+
+bool g_CancelRequested = false;
+bool g_isUISimulated = false;
 
 void sendCommand(const std::string& command, const std::string& data) {
 	std::cout << command << " " << data << std::endl;
@@ -59,6 +60,11 @@ int runEngineWeb(int argc, char* argv[]) {
 			continue;
 		}
 
+		if (input == "getposition") {
+			std::cout << gameState.ToString() << std::endl;
+			continue;
+		}
+
 		if (input == "getsenseboard") {
 			sendCommand("senseboard", senseBoardState.ToString().c_str());
 			continue;
@@ -72,7 +78,7 @@ int runEngineWeb(int argc, char* argv[]) {
 			continue;
 		}
 
-		if (input == "move") {
+		if (input == "changepiecelocation") {
 			std::string move;
 			std::getline(std::cin, move);
 			
@@ -91,7 +97,10 @@ int runEngineWeb(int argc, char* argv[]) {
 				continue;
 			}
 
-			sendCommand("fen", gameState.ToFEN().c_str());
+			if (g_isUISimulated)
+				std::cout << gameState.ToString() << std::endl;
+			else
+				sendCommand("fen", gameState.ToFEN().c_str());
 			continue;
 		}
 
@@ -113,12 +122,34 @@ int runEngineWeb(int argc, char* argv[]) {
 		// Playing commands
 		{
 			if (input == "start") {
-				stateResolver.Init(gameState, SenseBoardState());
+				stateResolver.Init(gameState, senseBoardState);
 				sendCommand("ok");
 				continue;
 			}
 
-			if (input == "senseboardupdate") {
+			if (input == "senseboardupdate" || input == "sbu") {
+				std::string senseboardStr;
+				std::getline(std::cin, senseboardStr);
+
+				SenseBoardState state;
+				if (senseboardStr.length() != 64) {
+					ChessPieceLocation loc(senseboardStr.c_str());
+					if (!loc.IsOnBoard()) {
+						sendCommand("error", "invalid senseboard location");
+						continue;
+					}
+					state = SenseBoardState(senseBoardState);
+					state.Toggle(loc);
+				} else {
+					state = SenseBoardState(senseboardStr.c_str());
+				}
+				stateResolver.UpdateBoardState(state);
+
+				if (g_isUISimulated)
+					std::cout << gameState.ToString() << std::endl;
+				else
+					sendCommand("fen", gameState.ToFEN().c_str());
+				continue;
 			}
 			
 			if (input == "whosturn") {
@@ -145,7 +176,12 @@ std::time_t getExecModificationTime() {
 	return std::chrono::system_clock::to_time_t(sctp);
 }
 
+#include <bitset>
 int main(int argc, char* argv[]) {
+	uint8_t b = 0b10000010;
+	std::cout << std::bitset<8>(((b * 0x0802 & 0x22110) | (b * 0x8020 & 0x88440)) * 0x10101 >> 16) << std::endl;
+
+
 	std::time_t cftime = getExecModificationTime();
 	std::tm localTime;
 	localtime_s(&localTime, &cftime);
@@ -164,6 +200,16 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (command == "engineweb") {
+		return runEngineWeb(argc, argv);
+	}
+
+	if (command == "simulateengineweb") {
+		std::cout << myLocation.ToString() << std::endl;
+		g_isUISimulated = true;
+		gameState = ChessGameState("k1K5/8/8/8/2b5/3n4/1N5B/8 w - - 1 1");
+		senseBoardState = SenseBoardState("0000000001000001000100000010000000000000000000000000000010100000");
+		stateResolver.Init(gameState, senseBoardState);
+		std::cout << gameState.ToString() << std::endl;
 		return runEngineWeb(argc, argv);
 	}
 

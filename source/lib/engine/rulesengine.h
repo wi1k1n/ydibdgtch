@@ -46,6 +46,12 @@ enum class CHESSMOVEINFO : uint8_t {
 	PROMOTION = 3, // the move is pawn promotion
 };
 
+template<> struct std::hash<CHESSPIECE> {
+	size_t operator()(const CHESSPIECE& other) const {
+		return std::hash<uint8_t>()(static_cast<uint8_t>(other));
+	}
+};
+
 const int8_t CHESSLOCATION_INVALID = -1;
 
 /// @brief Solely chess piece representation (without any location or game state data)
@@ -98,6 +104,12 @@ private:
 	CHESSPIECE m_piece = CHESSPIECE::UNKNOWN;
 	CHESSCOLOR m_color = CHESSCOLOR::UNKNOWN;
 	CHESSHISTORY m_history = CHESSHISTORY::NONE;
+};
+
+template<> struct std::hash<ChessPiece> {
+	size_t operator()(const ChessPiece& other) const {
+		return std::hash<CHESSPIECE>()(other.GetPiece()) ^ std::hash<CHESSCOLOR>()(other.GetColor()) ^ std::hash<CHESSHISTORY>()(other.GetHistory());
+	}
 };
 
 /// @brief Solely chess piece location representation (without any piece or game state data)
@@ -173,22 +185,11 @@ struct ChessStateMove {
 		: from(from), to(to) {}
 };
 
-namespace std {
-
-template<>
-struct hash<ChessPieceLocation> {
+template<> struct std::hash<ChessPieceLocation> {
 	size_t operator()(const ChessPieceLocation& other) const {
-		return hash<int8_t>()(other.GetRow() << 4) ^ hash<int8_t>()(other.GetCol());
+		return std::hash<int8_t>()(other.GetRow() << 4) ^ std::hash<int8_t>()(other.GetCol());
 	}
 };
-template<>
-struct hash<CHESSPIECE> {
-	size_t operator()(const CHESSPIECE& other) const {
-		return hash<uint8_t>()(static_cast<uint8_t>(other));
-	}
-};
-
-} // namespace std
 
 /// @brief The chess game state representation: keeps track of all the pieces on the board and other game state data
 class ChessGameState {
@@ -257,6 +258,8 @@ public:
 	String ToString(bool legend = true, bool transpose = true, bool zeroBased = false) const;
 	String ToFEN() const;
 
+	bool operator==(const ChessGameState& other) const;
+
 private:
 	void fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color);
 	void fillRow(uint8_t row, const std::initializer_list<CHESSPIECE>& pieces, CHESSCOLOR color);
@@ -291,6 +294,15 @@ public:
 
 
 	virtual String ToString() const { return "ChessRulesEngine"; }
+};
+
+template<> struct std::hash<ChessGameState> {
+	size_t operator()(const ChessGameState& other) const {
+		size_t hash = 0;
+		for (const auto& pair : other.GetPieces())
+			hash ^= std::hash<ChessPieceLocation>()(pair.first) ^ std::hash<ChessPiece>()(pair.second);
+		return hash ^ std::hash<CHESSCOLOR>()(other.GetColorToMove()) ^ std::hash<uint16_t>()(other.GetFullMoves()) ^ std::hash<uint8_t>()(other.GetHalfMoves());
+	}
 };
 
 /// @brief Classic chess rules engine

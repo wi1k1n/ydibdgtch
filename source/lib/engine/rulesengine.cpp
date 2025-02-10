@@ -309,6 +309,10 @@ String ChessGameState::ToFEN() const {
 	return fen;
 }
 
+bool ChessGameState::operator==(const ChessGameState& other) const {
+	return m_pieces == other.m_pieces && m_colorToMove == other.m_colorToMove && m_fullMoves == other.m_fullMoves && m_halfMoves == other.m_halfMoves;
+}
+
 void ChessGameState::fillRow(uint8_t row, CHESSPIECE piece, CHESSCOLOR color) {
 	for (uint8_t i = 0; i < 8; ++i)
 		m_pieces.emplace(ChessPieceLocation(row, i), ChessPiece(piece, color));

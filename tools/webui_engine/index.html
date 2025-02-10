@@ -126,7 +126,7 @@
 			// console.log('Drop:', source, target, piece, newPos, oldPos, orientation);
 			// $('#inputLocation').val(target);
 			if (source === target) return;
-			sendData(`move`, `${source}:${target}`);
+			sendData(`changepiecelocation`, `${source}:${target}`);
 		}
 		var config = {
 			draggable: true,
@@ -151,7 +151,7 @@
 		function toggleSenseboardLed(square) {
 			const $led = $('#myBoard .square-' + square + ' .senseboard-led');
 			$led.toggleClass('senseboard-led-active');
-			sendData(`setsenseboard`, senseboardToString());
+			sendData(`senseboardupdate`, senseboardToString());
 		}
 
 		function removeSquaresSelections () {
@@ -240,6 +240,7 @@
 				ws.send(`${data}`);
 				consoleLog(`> ${data}`);
 			}
+			setTimeout(() => { }, 100);
 		}
 		function consoleLog(message) {
 			outputDiv.innerText += message + '\n';

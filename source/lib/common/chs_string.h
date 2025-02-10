@@ -36,6 +36,7 @@ public:
 	size_t length() const { return str.length(); }
 	inline bool isEmpty(void) const { return length() == 0; }
 	const char* c_str() const { return str.c_str(); }
+	std::string std_str() const { return str; }
 	void concat(const String& s) { str += s.str; }
 
 	// Convert string to number
